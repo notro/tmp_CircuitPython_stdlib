@@ -8,6 +8,7 @@ The diff from CPython is retained in the source files in the following way:
 It doesn't matter that the source files are large, because the resulting ```.mpy``` files are stripped of the comments.
 
 Special cases:
+- Added ```unittest/mp_function_attributes.py``` to handle properties on functions
 - ```test/support/__init__.py``` is converted to ```test/support.py``` so it can be cross compiled
 - ```itertools.py``` was copied from MicroPython [itertools.py](https://github.com/micropython/micropython-lib/blob/master/itertools/itertools.py) (CPython: [itertoolsmodule.c](https://github.com/python/cpython/blob/master/Modules/itertoolsmodule.c))
 - ```time.py``` was hacked from scratch (CPython: [timemodule.c](https://github.com/python/cpython/blob/master/Modules/timemodule.c))
