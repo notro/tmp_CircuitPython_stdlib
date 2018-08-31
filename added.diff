@@ -1,0 +1,416 @@
+----------------------------------------------------------------------------------------------------
+Lines added to lib/os.py
+--- dummy
++++ os.py
+@@ -24,6 +24,7 @@
+ #'
+ 
+ #import sys, errno
++import sys                                                                      ###
+ import stat as st
+ 
+ #_names = sys.builtin_module_names
+@@ -47,14 +48,37 @@
+ # requires updating importlib as well.
+ #if 'posix' in _names:
+ #    name = 'posix'
++name = 'posix'                                                                  ###
+ #    linesep = '\n'
++linesep = '\n'                                                                  ###
+ #    from posix import *
++from _os import (chdir, getcwd, listdir, remove, rename, rmdir, sep, sync, uname, unlink, urandom)  ###
++                                                                                                    ###
++import _collections                                                                                 ###
++import _os                                                                                          ###
++                                                                                                    ###
++stat_result = _collections.namedtuple('os.stat_result', ('st_mode', 'st_ino', 'st_dev', 'st_nlink', 'st_uid', 'st_gid', 'st_size', 'st_atime', 'st_mtime', 'st_ctime'))  ###
++                                                                                                    ###
++def stat(path):                                                                                     ###
++    return stat_result(*_os.stat(path))                                                             ###
++                                                                                                    ###
++lstat = stat                                                                                        ###
++                                                                                                    ###
++statvfs_result = _collections.namedtuple('os.statvfs_result', ('f_bsize', 'f_frsize', 'f_blocks', 'f_bfree', 'f_bavail', 'f_files', 'f_ffree', 'f_favail', 'f_flag', 'f_namemax'))  ###
++                                                                                                    ###
++def statvfs(path):                                                                                  ###
++    return statvfs_result(*_os.statvfs(path))                                                       ###
++                                                                                                    ###
++def mkdir(path, mode=0o777, dir_fd=None):                                                           ###
++    _os.mkdir(path)                                                                                 ###
++                                                                                                    ###
+ #    try:
+ #        from posix import _exit
+ #        __all__.append('_exit')
+ #    except ImportError:
+ #        pass
+ #    import posixpath as path
++import posixpath as path                                                                            ###
+ #
+ #    try:
+ #        from posix import _have_functions
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/shutil.py
+--- dummy
++++ shutil.py
+@@ -362,6 +362,8 @@
+         names = os.listdir(path)
+     except OSError:
+ #        onerror(os.listdir, path, sys.exc_info())
++        if onerror:                                                             ###
++            raise                                                               ###
+     for name in names:
+         fullname = os.path.join(path, name)
+         try:
+@@ -379,6 +381,8 @@
+         os.rmdir(path)
+     except OSError:
+ #        onerror(os.rmdir, path, sys.exc_info())
++        if onerror:                                                             ###
++            raise                                                               ###
+ 
+ ## Version using fd-based APIs to protect against races
+ #def _rmtree_safe_fd(topfd, path, onerror):
+@@ -480,6 +484,7 @@
+ #            os.close(fd)
+ #    else:
+ #        return _rmtree_unsafe(path, onerror)
++    return _rmtree_unsafe(path, not ignore_errors)                              ###
+ 
+ ## Allow introspection of whether or not the hardening against symlink
+ ## attacks is supported on the current platform
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/re.py
+--- dummy
++++ re.py
+@@ -119,6 +119,7 @@
+ 
+ """
+ 
++from ure import *                                                               ###
+ #import sys
+ #import sre_compile
+ #import sre_parse
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/difflib.py
+--- dummy
++++ difflib.py
+@@ -512,6 +512,12 @@
+ 
+         non_adjacent.append( (la, lb, 0) )
+ #        self.matching_blocks = list(map(Match._make, non_adjacent))
++        class _M:                                                               ###
++            def __init__(self, obj):                                            ###
++                self.obj = obj                                                  ###
++            def __call__(self, iterable):                                       ###
++                return self.obj(*iterable)                                      ###
++        self.matching_blocks = list(map(_M(Match), non_adjacent))               ###
+         return self.matching_blocks
+ 
+     def get_opcodes(self):
+@@ -663,8 +669,10 @@
+         # number of times we've seen it in 'a' so far ... kinda
+         avail = {}
+ #        availhas, matches = avail.__contains__, 0
++        matches = 0                                                             ###
+         for elt in self.a:
+ #            if availhas(elt):
++            if elt in avail:                                                    ###
+                 numb = avail[elt]
+             else:
+                 numb = fullbcount.get(elt, 0)
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/fnmatch.py
+--- dummy
++++ fnmatch.py
+@@ -51,6 +51,7 @@
+     pat = os.path.normcase(pat)
+     match = _compile_pattern(pat)
+ #    if os.path is posixpath:
++    if True:                                                                    ###
+         # normcase on posix is NOP. Optimize it away from the loop.
+         for name in names:
+             if match(name):
+@@ -107,3 +108,4 @@
+         else:
+             res = res + re.escape(c)
+ #    return res + '\Z(?ms)'
++    return res                                                                  ###
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/traceback.py
+--- dummy
++++ traceback.py
+@@ -68,6 +68,7 @@
+ #            line = line.strip()
+ #        else:
+ #            line = None
++        line = None                                                             ###
+ 
+         yield (filename, lineno, name, line)
+         curr = next_item
+@@ -141,6 +142,7 @@
+ #    if chain:
+ #        values = _iter_chain(value, tb)
+ #    else:
++    if True:                                                                    ###
+         values = [(value, tb)]
+ 
+     for value, tb in values:
+@@ -303,6 +305,7 @@
+ #    return stack
+ 
+ def clear_frames(tb):
++    pass                                                                        ###
+ #    "Clear all references to local variables in the frames of a traceback."
+ #    while tb is not None:
+ #        try:
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/posixpath.py
+--- dummy
++++ posixpath.py
+@@ -426,6 +426,7 @@
+ 
+ 
+ #supports_unicode_filenames = (sys.platform == 'darwin')
++supports_unicode_filenames = False                                              ###
+ 
+ def relpath(path, start=None):
+     """Return a relative version of a path"""
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/test/test_time.py
+--- dummy
++++ test/test_time.py
+@@ -12,6 +12,7 @@
+ 
+ # Max year is only limited by the size of C int.
+ #SIZEOF_INT = sysconfig.get_config_var('SIZEOF_INT') or 4
++SIZEOF_INT = 4                                                                  ###
+ TIME_MAXYEAR = (1 << 8 * SIZEOF_INT - 1) - 1
+ TIME_MINYEAR = -TIME_MAXYEAR - 1
+ _PyTime_ROUND_DOWN = 0
+@@ -35,6 +36,8 @@
+ #        self.assertFalse(info.monotonic)
+ #        self.assertTrue(info.adjustable)
+ 
++    @unittest.skipUnless(hasattr(time, 'clock'),                                ###
++                         'need time.clock()')                                   ###
+     def test_clock(self):
+         time.clock()
+ 
+@@ -172,9 +175,12 @@
+         # because systems vary in their support for year 0.
+         expected = "2000 01 01 00 00 00 1 001"
+ #        with support.check_warnings():
++        if True:                                                                ###
+             result = time.strftime("%Y %m %d %H %M %S %w %j", (2000,)+(0,)*8)
+         self.assertEqual(expected, result)
+ 
++    @unittest.skipUnless(hasattr(time, 'strptime'),                             ###
++                         'need time.strptime()')                                ###
+     def test_strptime(self):
+         # Should be able to go round-trip from strftime to strptime without
+         # raising an exception.
+@@ -190,11 +196,15 @@
+                 self.fail("conversion specifier %r failed with '%s' input." %
+                           (format, strf_output))
+ 
++    @unittest.skipUnless(hasattr(time, 'strptime'),                             ###
++                         'need time.strptime()')                                ###
+     def test_strptime_bytes(self):
+         # Make sure only strings are accepted as arguments to strptime.
+         self.assertRaises(TypeError, time.strptime, b'2009', "%Y")
+         self.assertRaises(TypeError, time.strptime, '2009', b'%Y')
+ 
++    @unittest.skipUnless(hasattr(time, 'strptime'),                             ###
++                         'need time.strptime()')                                ###
+     def test_strptime_exception_context(self):
+         # check that this doesn't chain exceptions needlessly (see #17572)
+         with self.assertRaises(ValueError) as e:
+@@ -229,6 +239,7 @@
+         t = time.mktime((2000, 1, 1, 0, 0, 0, 0, 0, -1))
+         self.assertEqual(time.ctime(t), 'Sat Jan  1 00:00:00 2000')
+ #        for year in [-100, 100, 1000, 2000, 2050, 10000]:
++        for year in [2000]:                                                     ###
+             try:
+                 testval = time.mktime((year, 1, 10) + (0,)*6)
+             except (ValueError, OverflowError):
+@@ -313,6 +324,7 @@
+                 del environ['TZ']
+             time.tzset()
+ 
++    @unittest.skip('Crashes')                                                   ###
+     def test_insane_timestamps(self):
+         # It's possible that some platform maps time_t to double,
+         # and that this test will fail there.  This test should
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/test/test_os.py
+--- dummy
++++ test/test_os.py
+@@ -2463,6 +2463,7 @@
+             encoded = support.TESTFN_UNDECODABLE
+         else:
+ #            encoded = os.fsencode(support.TESTFN)
++            encoded = support.TESTFN                                            ###
+         self.bytes_filenames.append(encoded)
+         self.bytes_filenames.append(memoryview(encoded))
+ 
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/unittest/loader.py
+--- dummy
++++ unittest/loader.py
+@@ -36,6 +36,7 @@
+ 
+ def _make_failed_import_test(name, suiteClass):
+ #    message = 'Failed to import test module: %s\n%s' % (name, traceback.format_exc())
++    message = 'Failed to import test module: %s' % (name,)                      ###
+     return _make_failed_test(name, ImportError(message), suiteClass)
+ 
+ def _make_failed_load_tests(name, exception, suiteClass):
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/unittest/runner.py
+--- dummy
++++ unittest/runner.py
+@@ -19,6 +19,14 @@
+         if attr in ('stream', '__getstate__'):
+             raise AttributeError(attr)
+ #        return getattr(self.stream,attr)
++        try:                                                                    ###
++            return getattr(self.stream,attr)                                    ###
++        except AttributeError:                                                  ###
++            if attr not in ['flush']:                                           ###
++                raise                                                           ###
++            def dummy():                                                        ###
++                pass                                                            ###
++            return dummy                                                        ###
+ 
+     def writeln(self, arg=None):
+         if arg:
+@@ -148,6 +156,7 @@
+         result.failfast = self.failfast
+         result.buffer = self.buffer
+ #        with warnings.catch_warnings():
++        if True:                                                                ###
+ #            if self.warnings:
+ #                # if self.warnings is set, use it to filter all the warnings
+ #                warnings.simplefilter(self.warnings)
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/unittest/case.py
+--- dummy
++++ unittest/case.py
+@@ -14,6 +14,7 @@
+ from . import result
+ from .util import (strclass, safe_repr, _count_diff_all_purpose,
+                    _count_diff_hashable, _common_shorten_repr)
++from .mp_function_attributes import func_getattr, func_setattr
+ 
+ __unittest = True
+ 
+@@ -95,7 +96,9 @@
+             test_item = skip_wrapper
+ 
+ #        test_item.__unittest_skip__ = True
++        func_setattr(test_item, '__unittest_skip__', True)                      ###
+ #        test_item.__unittest_skip_why__ = reason
++        func_setattr(test_item, '__unittest_skip_why__', reason)                ###
+         return test_item
+     return decorator
+ 
+@@ -117,6 +120,7 @@
+ 
+ def expectedFailure(test_item):
+ #    test_item.__unittest_expecting_failure__ = True
++    func_setattr(test_item, '__unittest_expecting_failure__', True)             ###
+     return test_item
+ 
+ 
+@@ -186,6 +190,7 @@
+             return False
+         # store exception, without traceback, for later retrieval
+ #        self.exception = exc_value.with_traceback(None)
++        self.exception = exc_value                                              ###
+         if self.expected_regex is None:
+             return True
+ 
+@@ -378,6 +383,7 @@
+                       (self.__class__, methodName))
+ #        else:
+ #            self._testMethodDoc = testMethod.__doc__
++        self._testMethodDoc = ''                                                ### There's no __doc__
+         self._cleanups = []
+         self._subtest = None
+ 
+@@ -555,17 +561,21 @@
+         testMethod = getattr(self, self._testMethodName)
+         if (getattr(self.__class__, "__unittest_skip__", False) or
+ #            getattr(testMethod, "__unittest_skip__", False)):
++            func_getattr(testMethod, "__unittest_skip__", False)):              ###
+             # If the class or method was skipped.
+             try:
+                 skip_why = (getattr(self.__class__, '__unittest_skip_why__', '')
+ #                            or getattr(testMethod, '__unittest_skip_why__', ''))
++                            or func_getattr(testMethod, '__unittest_skip_why__', ''))  ###
+                 self._addSkip(result, self, skip_why)
+             finally:
+                 result.stopTest(self)
+             return
+ #        expecting_failure_method = getattr(testMethod,
++        expecting_failure_method = func_getattr(testMethod,                     ###
+                                            "__unittest_expecting_failure__", False)
+ #        expecting_failure_class = getattr(self,
++        expecting_failure_class = func_getattr(self,                            ###
+                                           "__unittest_expecting_failure__", False)
+         expecting_failure = expecting_failure_class or expecting_failure_method
+         outcome = _Outcome(result)
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/unittest/main.py
+--- dummy
++++ unittest/main.py
+@@ -74,6 +74,7 @@
+         self.verbosity = verbosity
+         self.buffer = buffer
+ #        if warnings is None and not sys.warnoptions:
++        if warnings is None:                                                    ###
+             # even if DreprecationWarnings are ignored by default
+             # print them anyway unless other warnings settings are
+             # specified by the warnings arg or the -W python flag
+@@ -89,6 +90,7 @@
+         self.testRunner = testRunner
+         self.testLoader = testLoader
+ #        self.progName = os.path.basename(argv[0])
++        self.progName = 'UnitTest'                                              ###
+         self.parseArgs(argv)
+         self.runTests()
+ 
+@@ -124,6 +126,7 @@
+ #        else:
+ #            self._main_parser.parse_args(argv[1:], self)
+ 
++        self.tests = None                                                       ###
+         if self.tests:
+             self.testNames = _convert_names(self.tests)
+             if __name__ == '__main__':
+
+----------------------------------------------------------------------------------------------------
+Lines added to lib/unittest/__init__.py
+--- dummy
++++ unittest/__init__.py
+@@ -57,6 +57,7 @@
+ 
+ from .result import TestResult
+ #from .case import (TestCase, FunctionTestCase, SkipTest, skip, skipIf,
++from .case import (TestCase, SkipTest, skip, skipIf,                            ###
+                    skipUnless, expectedFailure)
+ from .suite import BaseTestSuite, TestSuite
+ from .loader import (TestLoader, defaultTestLoader, makeSuite, getTestCaseNames,
+
