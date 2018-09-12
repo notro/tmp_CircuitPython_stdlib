@@ -52,25 +52,25 @@ name = 'posix'                                                                  
 #    linesep = '\n'
 linesep = '\n'                                                                  ###
 #    from posix import *
-from _os import (chdir, getcwd, listdir, remove, rename, rmdir, sep, sync, uname, unlink, urandom)  ###
+from uos import (chdir, getcwd, listdir, remove, rename, rmdir, sep, sync, uname, unlink, urandom)  ###
                                                                                                     ###
-import _collections                                                                                 ###
-import _os                                                                                          ###
+import collections                                                                                  ###
+import uos                                                                                          ###
                                                                                                     ###
-stat_result = _collections.namedtuple('os.stat_result', ('st_mode', 'st_ino', 'st_dev', 'st_nlink', 'st_uid', 'st_gid', 'st_size', 'st_atime', 'st_mtime', 'st_ctime'))  ###
+stat_result = collections.namedtuple('os.stat_result', ('st_mode', 'st_ino', 'st_dev', 'st_nlink', 'st_uid', 'st_gid', 'st_size', 'st_atime', 'st_mtime', 'st_ctime'))  ###
                                                                                                     ###
 def stat(path):                                                                                     ###
-    return stat_result(*_os.stat(path))                                                             ###
+    return stat_result(*uos.stat(path))                                                             ###
                                                                                                     ###
 lstat = stat                                                                                        ###
                                                                                                     ###
-statvfs_result = _collections.namedtuple('os.statvfs_result', ('f_bsize', 'f_frsize', 'f_blocks', 'f_bfree', 'f_bavail', 'f_files', 'f_ffree', 'f_favail', 'f_flag', 'f_namemax'))  ###
+statvfs_result = collections.namedtuple('os.statvfs_result', ('f_bsize', 'f_frsize', 'f_blocks', 'f_bfree', 'f_bavail', 'f_files', 'f_ffree', 'f_favail', 'f_flag', 'f_namemax'))  ###
                                                                                                     ###
 def statvfs(path):                                                                                  ###
-    return statvfs_result(*_os.statvfs(path))                                                       ###
+    return statvfs_result(*uos.statvfs(path))                                                       ###
                                                                                                     ###
 def mkdir(path, mode=0o777, dir_fd=None):                                                           ###
-    _os.mkdir(path)                                                                                 ###
+    uos.mkdir(path)                                                                                 ###
                                                                                                     ###
 #    try:
 #        from posix import _exit
