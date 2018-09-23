@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/unittest/mock.py
++++ lib/unittest/mock.py
+@@ -2350,3 +2350,4 @@
+         return self()
+     def __set__(self, obj, val):
+         self(val)
++

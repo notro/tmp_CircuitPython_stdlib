@@ -1,0 +1,12 @@
+--- <CPython-3.4.9>/stat.py
++++ lib/stat.py
+@@ -148,8 +148,4 @@
+             perm.append("-")
+     return "".join(perm)
+ 
+-# If available, use C implementation
+-try:
+-    from _stat import *
+-except ImportError:
+-    pass
++

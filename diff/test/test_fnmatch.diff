@@ -1,0 +1,40 @@
+--- <CPython-3.4.9>/test/test_fnmatch.py
++++ lib/test/test_fnmatch.py
+@@ -44,11 +44,6 @@
+         check('\nfoo', 'foo*', False)
+         check('\n', '*')
+ 
+-    def test_mix_bytes_str(self):
+-        self.assertRaises(TypeError, fnmatch, 'test', b'*')
+-        self.assertRaises(TypeError, fnmatch, b'test', '*')
+-        self.assertRaises(TypeError, fnmatchcase, 'test', b'*')
+-        self.assertRaises(TypeError, fnmatchcase, b'test', '*')
+ 
+     def test_fnmatchcase(self):
+         check = self.check_match
+@@ -57,20 +52,8 @@
+ 
+     def test_bytes(self):
+         self.check_match(b'test', b'te*')
+-        self.check_match(b'test\xff', b'te*\xff')
+         self.check_match(b'foo\nbar', b'foo*')
+ 
+-class TranslateTestCase(unittest.TestCase):
+-
+-    def test_translate(self):
+-        self.assertEqual(translate('*'), '.*\Z(?ms)')
+-        self.assertEqual(translate('?'), '.\Z(?ms)')
+-        self.assertEqual(translate('a?b*'), 'a.b.*\Z(?ms)')
+-        self.assertEqual(translate('[abc]'), '[abc]\Z(?ms)')
+-        self.assertEqual(translate('[]]'), '[]]\Z(?ms)')
+-        self.assertEqual(translate('[!x]'), '[^x]\Z(?ms)')
+-        self.assertEqual(translate('[^x]'), '[\\^x]\Z(?ms)')
+-        self.assertEqual(translate('[x'), '\\[x\Z(?ms)')
+ 
+ 
+ class FilterTestCase(unittest.TestCase):
+@@ -87,3 +70,4 @@
+ 
+ if __name__ == "__main__":
+     test_main()
++

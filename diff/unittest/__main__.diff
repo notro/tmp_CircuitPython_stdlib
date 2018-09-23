@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/unittest/__main__.py
++++ lib/unittest/__main__.py
+@@ -16,3 +16,4 @@
+ from .main import main, TestProgram
+ 
+ main(module=None)
++

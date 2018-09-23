@@ -1,0 +1,42 @@
+--- <CPython-3.4.9>/unittest/test/test_loader.py
++++ lib/unittest/test/test_loader.py
+@@ -1,6 +1,14 @@
+ import sys
+-import types
+-
++
++# >>> types.ModuleType('m')                                                     ###
++# TypeError: cannot create 'module' instances                                   ###
++class Module:                                                                   ###
++    def __init__(self, name):                                                   ###
++        self.__name__ = name                                                    ###
++                                                                                ###
++class types:                                                                    ###
++    def ModuleType(name):                                                       ###
++        return Module(name)                                                     ###
+ 
+ import unittest
+ 
+@@ -239,7 +247,7 @@
+         try:
+             loader.loadTestsFromName('sdasfasfasdf')
+         except ImportError as e:
+-            self.assertEqual(str(e), "No module named 'sdasfasfasdf'")
++            self.assertEqual(str(e), "no module named 'sdasfasfasdf'")          ### No capitalize()
+         else:
+             self.fail("TestLoader.loadTestsFromName failed to raise ImportError")
+ 
+@@ -619,7 +627,7 @@
+         try:
+             loader.loadTestsFromNames(['sdasfasfasdf'])
+         except ImportError as e:
+-            self.assertEqual(str(e), "No module named 'sdasfasfasdf'")
++            self.assertEqual(str(e), "no module named 'sdasfasfasdf'")          ### No capitalise()
+         else:
+             self.fail("TestLoader.loadTestsFromNames failed to raise ImportError")
+ 
+@@ -1310,3 +1318,4 @@
+ 
+ if __name__ == "__main__":
+     unittest.main()
++

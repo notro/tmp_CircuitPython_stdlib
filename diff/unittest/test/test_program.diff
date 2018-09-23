@@ -1,0 +1,228 @@
+--- <CPython-3.4.9>/unittest/test/test_program.py
++++ lib/unittest/test/test_program.py
+@@ -76,13 +76,10 @@
+                 self.test = test
+                 return True
+ 
+-        old_argv = sys.argv
+-        sys.argv = ['faketest']
+         runner = FakeRunner()
+         program = unittest.TestProgram(testRunner=runner, exit=False,
+                                        defaultTest='unittest.test',
+                                        testLoader=self.FooBarLoader())
+-        sys.argv = old_argv
+         self.assertEqual(('unittest.test',), program.testNames)
+ 
+     def test_defaultTest_with_iterable(self):
+@@ -91,20 +88,16 @@
+                 self.test = test
+                 return True
+ 
+-        old_argv = sys.argv
+-        sys.argv = ['faketest']
+         runner = FakeRunner()
+         program = unittest.TestProgram(
+             testRunner=runner, exit=False,
+             defaultTest=['unittest.test', 'unittest.test2'],
+             testLoader=self.FooBarLoader())
+-        sys.argv = old_argv
+         self.assertEqual(['unittest.test', 'unittest.test2'],
+                           program.testNames)
+ 
+     def test_NonExit(self):
+         program = unittest.main(exit=False,
+-                                argv=["foobar"],
+                                 testRunner=unittest.TextTestRunner(stream=io.StringIO()),
+                                 testLoader=self.FooBarLoader())
+         self.assertTrue(hasattr(program, 'result'))
+@@ -114,19 +107,11 @@
+         self.assertRaises(
+             SystemExit,
+             unittest.main,
+-            argv=["foobar"],
+             testRunner=unittest.TextTestRunner(stream=io.StringIO()),
+             exit=True,
+             testLoader=self.FooBarLoader())
+ 
+ 
+-    def test_ExitAsDefault(self):
+-        self.assertRaises(
+-            SystemExit,
+-            unittest.main,
+-            argv=["foobar"],
+-            testRunner=unittest.TextTestRunner(stream=io.StringIO()),
+-            testLoader=self.FooBarLoader())
+ 
+ 
+ class InitialisableProgram(unittest.TestProgram):
+@@ -169,78 +154,8 @@
+         FakeRunner.raiseError = False
+ 
+     def testVerbosity(self):
+-        program = self.program
+-
+-        for opt in '-q', '--quiet':
+-            program.verbosity = 1
+-            program.parseArgs([None, opt])
+-            self.assertEqual(program.verbosity, 0)
+-
+-        for opt in '-v', '--verbose':
+-            program.verbosity = 1
+-            program.parseArgs([None, opt])
+-            self.assertEqual(program.verbosity, 2)
+-
+-    def testBufferCatchFailfast(self):
+-        program = self.program
+-        for arg, attr in (('buffer', 'buffer'), ('failfast', 'failfast'),
+-                      ('catch', 'catchbreak')):
+-            if attr == 'catch' and not hasInstallHandler:
+-                continue
+-
+-            setattr(program, attr, None)
+-            program.parseArgs([None])
+-            self.assertIs(getattr(program, attr), False)
+-
+-            false = []
+-            setattr(program, attr, false)
+-            program.parseArgs([None])
+-            self.assertIs(getattr(program, attr), false)
+-
+-            true = [42]
+-            setattr(program, attr, true)
+-            program.parseArgs([None])
+-            self.assertIs(getattr(program, attr), true)
+-
+-            short_opt = '-%s' % arg[0]
+-            long_opt = '--%s' % arg
+-            for opt in short_opt, long_opt:
+-                setattr(program, attr, None)
+-                program.parseArgs([None, opt])
+-                self.assertIs(getattr(program, attr), True)
+-
+-                setattr(program, attr, False)
+-                with support.captured_stderr() as stderr, \
+-                    self.assertRaises(SystemExit) as cm:
+-                    program.parseArgs([None, opt])
+-                self.assertEqual(cm.exception.args, (2,))
+-
+-                setattr(program, attr, True)
+-                with support.captured_stderr() as stderr, \
+-                    self.assertRaises(SystemExit) as cm:
+-                    program.parseArgs([None, opt])
+-                self.assertEqual(cm.exception.args, (2,))
+-
+-    def testWarning(self):
+-        """Test the warnings argument"""
+-        # see #10535
+-        class FakeTP(unittest.TestProgram):
+-            def parseArgs(self, *args, **kw): pass
+-            def runTests(self, *args, **kw): pass
+-        warnoptions = sys.warnoptions[:]
+-        try:
+-            sys.warnoptions[:] = []
+-            # no warn options, no arg -> default
+-            self.assertEqual(FakeTP().warnings, 'default')
+-            # no warn options, w/ arg -> arg value
+-            self.assertEqual(FakeTP(warnings='ignore').warnings, 'ignore')
+-            sys.warnoptions[:] = ['somevalue']
+-            # warn options, no arg -> None
+-            # warn options, w/ arg -> arg value
+-            self.assertEqual(FakeTP().warnings, None)
+-            self.assertEqual(FakeTP(warnings='ignore').warnings, 'ignore')
+-        finally:
+-            sys.warnoptions[:] = warnoptions
++        program = unittest.TestProgram(tests=None, quiet=True)                  ###
++        self.assertEqual(program.verbosity, 0)                                  ###
+ 
+     def testRunTestsRunnerClass(self):
+         program = self.program
+@@ -291,26 +206,6 @@
+         self.assertEqual(FakeRunner.initArgs, {})
+         self.assertEqual(FakeRunner.test, 'test')
+         self.assertIs(program.result, RESULT)
+-
+-    def testCatchBreakInstallsHandler(self):
+-        module = sys.modules['unittest.main']
+-        original = module.installHandler
+-        def restore():
+-            module.installHandler = original
+-        self.addCleanup(restore)
+-
+-        self.installed = False
+-        def fakeInstallHandler():
+-            self.installed = True
+-        module.installHandler = fakeInstallHandler
+-
+-        program = self.program
+-        program.catchbreak = True
+-
+-        program.testRunner = FakeRunner
+-
+-        program.runTests()
+-        self.assertTrue(self.installed)
+ 
+     def _patch_isfile(self, names, exists=True):
+         def isfile(path):
+@@ -324,8 +219,9 @@
+ 
+     def testParseArgsFileNames(self):
+         # running tests with filenames instead of module names
+-        program = self.program
++        program = unittest.TestProgram(tests=None)                              ###
+         argv = ['progname', 'foo.py', 'bar.Py', 'baz.PY', 'wing.txt']
++        program.tests = argv[1:]                                                ###
+         self._patch_isfile(argv)
+ 
+         program.createTests = lambda: None
+@@ -338,8 +234,9 @@
+ 
+ 
+     def testParseArgsFilePaths(self):
+-        program = self.program
++        program = unittest.TestProgram(tests=None)                              ###
+         argv = ['progname', 'foo/bar/baz.py', 'green\\red.py']
++        program.tests = argv[1:]                                                ###
+         self._patch_isfile(argv)
+ 
+         program.createTests = lambda: None
+@@ -350,8 +247,9 @@
+ 
+ 
+     def testParseArgsNonExistentFiles(self):
+-        program = self.program
++        program = unittest.TestProgram(tests=None)                              ###
+         argv = ['progname', 'foo/bar/baz.py', 'green\\red.py']
++        program.tests = argv[1:]                                                ###
+         self._patch_isfile([])
+ 
+         program.createTests = lambda: None
+@@ -361,10 +259,11 @@
+ 
+     def testParseArgsAbsolutePathsThatCanBeConverted(self):
+         cur_dir = os.getcwd()
+-        program = self.program
++        program = unittest.TestProgram(tests=None)                              ###
+         def _join(name):
+             return os.path.join(cur_dir, name)
+         argv = ['progname', _join('foo/bar/baz.py'), _join('green\\red.py')]
++        program.tests = argv[1:]                                                ###
+         self._patch_isfile(argv)
+ 
+         program.createTests = lambda: None
+@@ -374,9 +273,10 @@
+         self.assertEqual(program.testNames, expected)
+ 
+     def testParseArgsAbsolutePathsThatCannotBeConverted(self):
+-        program = self.program
++        program = unittest.TestProgram(tests=None)                              ###
+         # even on Windows '/...' is considered absolute by os.path.abspath
+         argv = ['progname', '/foo/bar/baz.py', '/green/red.py']
++        program.tests = argv[1:]                                                ###
+         self._patch_isfile(argv)
+ 
+         program.createTests = lambda: None
+@@ -394,3 +294,4 @@
+ 
+ if __name__ == '__main__':
+     unittest.main()
++

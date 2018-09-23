@@ -1,0 +1,58 @@
+--- <CPython-3.4.9>/unittest/runner.py
++++ lib/unittest/runner.py
+@@ -2,10 +2,8 @@
+ 
+ import sys
+ import time
+-import warnings
+ 
+ from . import result
+-from .signals import registerResult
+ 
+ __unittest = True
+ 
+@@ -18,7 +16,14 @@
+     def __getattr__(self, attr):
+         if attr in ('stream', '__getstate__'):
+             raise AttributeError(attr)
+-        return getattr(self.stream,attr)
++        try:                                                                    ###
++            return getattr(self.stream,attr)                                    ###
++        except AttributeError:                                                  ###
++            if attr not in ['flush']:                                           ###
++                raise                                                           ###
++            def dummy():                                                        ###
++                pass                                                            ###
++            return dummy                                                        ###
+ 
+     def writeln(self, arg=None):
+         if arg:
+@@ -144,22 +149,9 @@
+     def run(self, test):
+         "Run the given test case or test suite."
+         result = self._makeResult()
+-        registerResult(result)
+         result.failfast = self.failfast
+         result.buffer = self.buffer
+-        with warnings.catch_warnings():
+-            if self.warnings:
+-                # if self.warnings is set, use it to filter all the warnings
+-                warnings.simplefilter(self.warnings)
+-                # if the filter is 'default' or 'always', special-case the
+-                # warnings from the deprecated unittest methods to show them
+-                # no more than once per module, because they can be fairly
+-                # noisy.  The -Wd and -Wa flags can be used to bypass this
+-                # only when self.warnings is None.
+-                if self.warnings in ['default', 'always']:
+-                    warnings.filterwarnings('module',
+-                            category=DeprecationWarning,
+-                            message='Please use assert\w+ instead.')
++        if True:                                                                ###
+             startTime = time.time()
+             startTestRun = getattr(result, 'startTestRun', None)
+             if startTestRun is not None:
+@@ -211,3 +203,4 @@
+         else:
+             self.stream.write("\n")
+         return result
++

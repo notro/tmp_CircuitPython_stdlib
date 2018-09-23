@@ -1,0 +1,5 @@
+--- <CPython-3.4.9>/unittest/test/dummy.py
++++ lib/unittest/test/dummy.py
+@@ -1 +1,2 @@
+ # Empty module for testing the loading of modules
++

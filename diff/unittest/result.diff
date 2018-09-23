@@ -1,0 +1,93 @@
+--- <CPython-3.4.9>/unittest/result.py
++++ lib/unittest/result.py
+@@ -5,12 +5,10 @@
+ import traceback
+ 
+ from . import util
+-from functools import wraps
+ 
+ __unittest = True
+ 
+ def failfast(method):
+-    @wraps(method)
+     def inner(self, *args, **kw):
+         if getattr(self, 'failfast', False):
+             self.stop()
+@@ -58,15 +56,7 @@
+         "Called when the given test is about to be run"
+         self.testsRun += 1
+         self._mirrorOutput = False
+-        self._setupStdout()
+ 
+-    def _setupStdout(self):
+-        if self.buffer:
+-            if self._stderr_buffer is None:
+-                self._stderr_buffer = io.StringIO()
+-                self._stdout_buffer = io.StringIO()
+-            sys.stdout = self._stdout_buffer
+-            sys.stderr = self._stderr_buffer
+ 
+     def startTestRun(self):
+         """Called once before any tests are executed.
+@@ -76,29 +66,8 @@
+ 
+     def stopTest(self, test):
+         """Called when the given test has been run"""
+-        self._restoreStdout()
+         self._mirrorOutput = False
+ 
+-    def _restoreStdout(self):
+-        if self.buffer:
+-            if self._mirrorOutput:
+-                output = sys.stdout.getvalue()
+-                error = sys.stderr.getvalue()
+-                if output:
+-                    if not output.endswith('\n'):
+-                        output += '\n'
+-                    self._original_stdout.write(STDOUT_LINE % output)
+-                if error:
+-                    if not error.endswith('\n'):
+-                        error += '\n'
+-                    self._original_stderr.write(STDERR_LINE % error)
+-
+-            sys.stdout = self._original_stdout
+-            sys.stderr = self._original_stderr
+-            self._stdout_buffer.seek(0)
+-            self._stdout_buffer.truncate()
+-            self._stderr_buffer.seek(0)
+-            self._stderr_buffer.truncate()
+ 
+     def stopTestRun(self):
+         """Called once after all tests are executed.
+@@ -173,8 +142,6 @@
+         """Converts a sys.exc_info()-style tuple of values into a string."""
+         exctype, value, tb = err
+         # Skip test runner traceback levels
+-        while tb and self._is_relevant_tb_level(tb):
+-            tb = tb.tb_next
+ 
+         if exctype is test.failureException:
+             # Skip assert*() traceback levels
+@@ -183,17 +150,6 @@
+         else:
+             msgLines = traceback.format_exception(exctype, value, tb)
+ 
+-        if self.buffer:
+-            output = sys.stdout.getvalue()
+-            error = sys.stderr.getvalue()
+-            if output:
+-                if not output.endswith('\n'):
+-                    output += '\n'
+-                msgLines.append(STDOUT_LINE % output)
+-            if error:
+-                if not error.endswith('\n'):
+-                    error += '\n'
+-                msgLines.append(STDERR_LINE % error)
+         return ''.join(msgLines)
+ 
+ 
+@@ -211,3 +167,4 @@
+         return ("<%s run=%i errors=%i failures=%i>" %
+                (util.strclass(self.__class__), self.testsRun, len(self.errors),
+                 len(self.failures)))
++

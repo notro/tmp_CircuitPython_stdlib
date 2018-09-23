@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/unittest/test/support.py
++++ lib/unittest/test/support.py
+@@ -140,3 +140,4 @@
+ 
+     def wasSuccessful(self):
+         return True
++

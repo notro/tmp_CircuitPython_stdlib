@@ -1,0 +1,151 @@
+--- <CPython-3.4.9>/unittest/test/test_runner.py
++++ lib/unittest/test/test_runner.py
+@@ -1,8 +1,6 @@
+ import io
+ import os
+ import sys
+-import pickle
+-import subprocess
+ 
+ import unittest
+ from unittest.case import _Outcome
+@@ -138,17 +136,6 @@
+ class Test_TextTestRunner(unittest.TestCase):
+     """Tests for TextTestRunner."""
+ 
+-    def setUp(self):
+-        # clean the environment from pre-existing PYTHONWARNINGS to make
+-        # test_warnings results consistent
+-        self.pythonwarnings = os.environ.get('PYTHONWARNINGS')
+-        if self.pythonwarnings:
+-            del os.environ['PYTHONWARNINGS']
+-
+-    def tearDown(self):
+-        # bring back pre-existing PYTHONWARNINGS if present
+-        if self.pythonwarnings:
+-            os.environ['PYTHONWARNINGS'] = self.pythonwarnings
+ 
+     def test_init(self):
+         runner = unittest.TextTestRunner()
+@@ -187,28 +174,6 @@
+         self.assertTrue(result.failfast)
+         self.assertTrue(result.buffer)
+ 
+-    def testRunnerRegistersResult(self):
+-        class Test(unittest.TestCase):
+-            def testFoo(self):
+-                pass
+-        originalRegisterResult = unittest.runner.registerResult
+-        def cleanup():
+-            unittest.runner.registerResult = originalRegisterResult
+-        self.addCleanup(cleanup)
+-
+-        result = unittest.TestResult()
+-        runner = unittest.TextTestRunner(stream=io.StringIO())
+-        # Use our result object
+-        runner._makeResult = lambda: result
+-
+-        self.wasRegistered = 0
+-        def fakeRegisterResult(thisResult):
+-            self.wasRegistered += 1
+-            self.assertEqual(thisResult, result)
+-        unittest.runner.registerResult = fakeRegisterResult
+-
+-        runner.run(unittest.TestSuite())
+-        self.assertEqual(self.wasRegistered, 1)
+ 
+     def test_works_with_result_without_startTestRun_stopTestRun(self):
+         class OldTextResult(ResultWithNoStartTestRunStopTestRun):
+@@ -246,16 +211,6 @@
+         expected = ['startTestRun', 'stopTestRun']
+         self.assertEqual(events, expected)
+ 
+-    def test_pickle_unpickle(self):
+-        # Issue #7197: a TextTestRunner should be (un)pickleable. This is
+-        # required by test_multiprocessing under Windows (in verbose mode).
+-        stream = io.StringIO("foo")
+-        runner = unittest.TextTestRunner(stream)
+-        for protocol in range(2, pickle.HIGHEST_PROTOCOL + 1):
+-            s = pickle.dumps(runner, protocol)
+-            obj = pickle.loads(s)
+-            # StringIO objects never compare equal, a cheap test instead.
+-            self.assertEqual(obj.stream.getvalue(), stream.getvalue())
+ 
+     def test_resultclass(self):
+         def MockResultClass(*args):
+@@ -270,70 +225,6 @@
+         expectedresult = (runner.stream, DESCRIPTIONS, VERBOSITY)
+         self.assertEqual(runner._makeResult(), expectedresult)
+ 
+-    def test_warnings(self):
+-        """
+-        Check that warnings argument of TextTestRunner correctly affects the
+-        behavior of the warnings.
+-        """
+-        # see #10535 and the _test_warnings file for more information
+-
+-        def get_parse_out_err(p):
+-            return [b.splitlines() for b in p.communicate()]
+-        opts = dict(stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+-                    cwd=os.path.dirname(__file__))
+-        ae_msg = b'Please use assertEqual instead.'
+-        at_msg = b'Please use assertTrue instead.'
+-
+-        # no args -> all the warnings are printed, unittest warnings only once
+-        p = subprocess.Popen([sys.executable, '_test_warnings.py'], **opts)
+-        out, err = get_parse_out_err(p)
+-        self.assertIn(b'OK', err)
+-        # check that the total number of warnings in the output is correct
+-        self.assertEqual(len(out), 12)
+-        # check that the numbers of the different kind of warnings is correct
+-        for msg in [b'dw', b'iw', b'uw']:
+-            self.assertEqual(out.count(msg), 3)
+-        for msg in [ae_msg, at_msg, b'rw']:
+-            self.assertEqual(out.count(msg), 1)
+-
+-        args_list = (
+-            # passing 'ignore' as warnings arg -> no warnings
+-            [sys.executable, '_test_warnings.py', 'ignore'],
+-            # -W doesn't affect the result if the arg is passed
+-            [sys.executable, '-Wa', '_test_warnings.py', 'ignore'],
+-            # -W affects the result if the arg is not passed
+-            [sys.executable, '-Wi', '_test_warnings.py']
+-        )
+-        # in all these cases no warnings are printed
+-        for args in args_list:
+-            p = subprocess.Popen(args, **opts)
+-            out, err = get_parse_out_err(p)
+-            self.assertIn(b'OK', err)
+-            self.assertEqual(len(out), 0)
+-
+-
+-        # passing 'always' as warnings arg -> all the warnings printed,
+-        #                                     unittest warnings only once
+-        p = subprocess.Popen([sys.executable, '_test_warnings.py', 'always'],
+-                             **opts)
+-        out, err = get_parse_out_err(p)
+-        self.assertIn(b'OK', err)
+-        self.assertEqual(len(out), 14)
+-        for msg in [b'dw', b'iw', b'uw', b'rw']:
+-            self.assertEqual(out.count(msg), 3)
+-        for msg in [ae_msg, at_msg]:
+-            self.assertEqual(out.count(msg), 1)
+-
+-    def testStdErrLookedUpAtInstantiationTime(self):
+-        # see issue 10786
+-        old_stderr = sys.stderr
+-        f = io.StringIO()
+-        sys.stderr = f
+-        try:
+-            runner = unittest.TextTestRunner()
+-            self.assertTrue(runner.stream.stream is f)
+-        finally:
+-            sys.stderr = old_stderr
+ 
+     def testSpecifiedStreamUsed(self):
+         # see issue 10786
+@@ -344,3 +235,4 @@
+ 
+ if __name__ == "__main__":
+     unittest.main()
++

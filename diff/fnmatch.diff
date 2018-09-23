@@ -1,0 +1,43 @@
+--- <CPython-3.4.9>/fnmatch.py
++++ lib/fnmatch.py
+@@ -10,9 +10,7 @@
+ corresponding to PATTERN.  (It does not compile it.)
+ """
+ import os
+-import posixpath
+ import re
+-import functools
+ 
+ __all__ = ["filter", "fnmatch", "fnmatchcase", "translate"]
+ 
+@@ -35,7 +33,6 @@
+     pat = os.path.normcase(pat)
+     return fnmatchcase(name, pat)
+ 
+-@functools.lru_cache(maxsize=256, typed=True)
+ def _compile_pattern(pat):
+     if isinstance(pat, bytes):
+         pat_str = str(pat, 'ISO-8859-1')
+@@ -50,14 +47,10 @@
+     result = []
+     pat = os.path.normcase(pat)
+     match = _compile_pattern(pat)
+-    if os.path is posixpath:
++    if True:                                                                    ###
+         # normcase on posix is NOP. Optimize it away from the loop.
+         for name in names:
+             if match(name):
+-                result.append(name)
+-    else:
+-        for name in names:
+-            if match(os.path.normcase(name)):
+                 result.append(name)
+     return result
+ 
+@@ -106,4 +99,5 @@
+                 res = '%s[%s]' % (res, stuff)
+         else:
+             res = res + re.escape(c)
+-    return res + '\Z(?ms)'
++    return res                                                                  ###
++

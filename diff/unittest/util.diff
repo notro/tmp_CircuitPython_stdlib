@@ -1,0 +1,15 @@
+--- <CPython-3.4.9>/unittest/util.py
++++ lib/unittest/util.py
+@@ -1,6 +1,7 @@
+ """Various utility functions."""
+ 
+ from collections import namedtuple, OrderedDict
++import os                                                                       ### Make os.path available
+ from os.path import commonprefix
+ 
+ __unittest = True
+@@ -175,3 +176,4 @@
+             diff = _Mismatch(0, cnt_t, elem)
+             result.append(diff)
+     return result
++

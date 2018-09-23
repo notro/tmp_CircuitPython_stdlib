@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/unittest/test/test_setups.py
++++ lib/unittest/test/test_setups.py
+@@ -504,3 +504,4 @@
+ 
+ if __name__ == '__main__':
+     unittest.main()
++

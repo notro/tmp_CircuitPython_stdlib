@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/unittest/test/test_functiontestcase.py
++++ lib/unittest/test/test_functiontestcase.py
+@@ -146,3 +146,4 @@
+ 
+ if __name__ == "__main__":
+     unittest.main()
++

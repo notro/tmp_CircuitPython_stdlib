@@ -1,0 +1,106 @@
+--- <CPython-3.4.9>/difflib.py
++++ lib/difflib.py
+@@ -26,11 +26,7 @@
+     For producing HTML side by side comparison with change highlights.
+ """
+ 
+-__all__ = ['get_close_matches', 'ndiff', 'restore', 'SequenceMatcher',
+-           'Differ','IS_CHARACTER_JUNK', 'IS_LINE_JUNK', 'context_diff',
+-           'unified_diff', 'HtmlDiff', 'Match']
+-
+-import heapq
++
+ from collections import namedtuple as _namedtuple
+ 
+ Match = _namedtuple('Match', 'a b size')
+@@ -511,7 +507,12 @@
+             non_adjacent.append((i1, j1, k1))
+ 
+         non_adjacent.append( (la, lb, 0) )
+-        self.matching_blocks = list(map(Match._make, non_adjacent))
++        class _M:                                                               ###
++            def __init__(self, obj):                                            ###
++                self.obj = obj                                                  ###
++            def __call__(self, iterable):                                       ###
++                return self.obj(*iterable)                                      ###
++        self.matching_blocks = list(map(_M(Match), non_adjacent))               ###
+         return self.matching_blocks
+ 
+     def get_opcodes(self):
+@@ -662,9 +663,9 @@
+         # avail[x] is the number of times x appears in 'b' less the
+         # number of times we've seen it in 'a' so far ... kinda
+         avail = {}
+-        availhas, matches = avail.__contains__, 0
++        matches = 0                                                             ###
+         for elt in self.a:
+-            if availhas(elt):
++            if elt in avail:                                                    ###
+                 numb = avail[elt]
+             else:
+                 numb = fullbcount.get(elt, 0)
+@@ -685,53 +686,6 @@
+         # shorter sequence
+         return _calculate_ratio(min(la, lb), la + lb)
+ 
+-def get_close_matches(word, possibilities, n=3, cutoff=0.6):
+-    """Use SequenceMatcher to return list of the best "good enough" matches.
+-
+-    word is a sequence for which close matches are desired (typically a
+-    string).
+-
+-    possibilities is a list of sequences against which to match word
+-    (typically a list of strings).
+-
+-    Optional arg n (default 3) is the maximum number of close matches to
+-    return.  n must be > 0.
+-
+-    Optional arg cutoff (default 0.6) is a float in [0, 1].  Possibilities
+-    that don't score at least that similar to word are ignored.
+-
+-    The best (no more than n) matches among the possibilities are returned
+-    in a list, sorted by similarity score, most similar first.
+-
+-    >>> get_close_matches("appel", ["ape", "apple", "peach", "puppy"])
+-    ['apple', 'ape']
+-    >>> import keyword as _keyword
+-    >>> get_close_matches("wheel", _keyword.kwlist)
+-    ['while']
+-    >>> get_close_matches("Apple", _keyword.kwlist)
+-    []
+-    >>> get_close_matches("accept", _keyword.kwlist)
+-    ['except']
+-    """
+-
+-    if not n >  0:
+-        raise ValueError("n must be > 0: %r" % (n,))
+-    if not 0.0 <= cutoff <= 1.0:
+-        raise ValueError("cutoff must be in [0.0, 1.0]: %r" % (cutoff,))
+-    result = []
+-    s = SequenceMatcher()
+-    s.set_seq2(word)
+-    for x in possibilities:
+-        s.set_seq1(x)
+-        if s.real_quick_ratio() >= cutoff and \
+-           s.quick_ratio() >= cutoff and \
+-           s.ratio() >= cutoff:
+-            result.append((s.ratio(), x))
+-
+-    # Move the best scorers to head of list
+-    result = heapq.nlargest(n, result)
+-    # Strip scores for the best n matches
+-    return [x for score, x in result]
+ 
+ def _count_leading(line, ch):
+     """
+@@ -2031,9 +1985,4 @@
+         if line[:2] in prefixes:
+             yield line[2:]
+ 
+-def _test():
+-    import doctest, difflib
+-    return doctest.testmod(difflib)
+-
+-if __name__ == "__main__":
+-    _test()
++

@@ -1,0 +1,161 @@
+--- <CPython-3.4.9>/posixpath.py
++++ lib/posixpath.py
+@@ -51,7 +51,7 @@
+     if not isinstance(s, (bytes, str)):
+         raise TypeError("normcase() argument must be str or bytes, "
+                         "not '{}'".format(s.__class__.__name__))
+-    return s
++    return s.lower()                                                            ### FAT
+ 
+ 
+ # Return whether a path is absolute.
+@@ -120,7 +120,6 @@
+         sep = '/'
+         extsep = '.'
+     return genericpath._splitext(p, sep, None, extsep)
+-splitext.__doc__ = genericpath._splitext.__doc__
+ 
+ # Split a pathname into a drive specification and the rest of the
+ # path.  Useful on DOS/Windows/NT; on Unix, the drive is always empty.
+@@ -179,6 +178,8 @@
+ 
+ def ismount(path):
+     """Test whether a path is a mount point"""
++    if path == '/' or path == b'/':                                             ###
++        return True                                                             ###
+     try:
+         s1 = os.lstat(path)
+     except OSError:
+@@ -198,117 +199,10 @@
+     except OSError:
+         return False
+ 
+-    dev1 = s1.st_dev
+-    dev2 = s2.st_dev
+-    if dev1 != dev2:
+-        return True     # path/.. on a different device as path
+-    ino1 = s1.st_ino
+-    ino2 = s2.st_ino
+-    if ino1 == ino2:
+-        return True     # path/.. is the same i-node as path
++#     st_dev and st_ino are always zero                                         ###
+     return False
+ 
+ 
+-# Expand paths beginning with '~' or '~user'.
+-# '~' means $HOME; '~user' means that user's home directory.
+-# If the path doesn't begin with '~', or if the user or $HOME is unknown,
+-# the path is returned unchanged (leaving error reporting to whatever
+-# function is called with the expanded path as argument).
+-# See also module 'glob' for expansion of *, ? and [...] in pathnames.
+-# (A function should also be defined to do full *sh-style environment
+-# variable expansion.)
+-
+-def expanduser(path):
+-    """Expand ~ and ~user constructions.  If user or $HOME is unknown,
+-    do nothing."""
+-    if isinstance(path, bytes):
+-        tilde = b'~'
+-    else:
+-        tilde = '~'
+-    if not path.startswith(tilde):
+-        return path
+-    sep = _get_sep(path)
+-    i = path.find(sep, 1)
+-    if i < 0:
+-        i = len(path)
+-    if i == 1:
+-        if 'HOME' not in os.environ:
+-            import pwd
+-            userhome = pwd.getpwuid(os.getuid()).pw_dir
+-        else:
+-            userhome = os.environ['HOME']
+-    else:
+-        import pwd
+-        name = path[1:i]
+-        if isinstance(name, bytes):
+-            name = str(name, 'ASCII')
+-        try:
+-            pwent = pwd.getpwnam(name)
+-        except KeyError:
+-            return path
+-        userhome = pwent.pw_dir
+-    if isinstance(path, bytes):
+-        userhome = os.fsencode(userhome)
+-        root = b'/'
+-    else:
+-        root = '/'
+-    userhome = userhome.rstrip(root)
+-    return (userhome + path[i:]) or root
+-
+-
+-# Expand paths containing shell variable substitutions.
+-# This expands the forms $variable and ${variable} only.
+-# Non-existent variables are left unchanged.
+-
+-_varprog = None
+-_varprogb = None
+-
+-def expandvars(path):
+-    """Expand shell variables of form $var and ${var}.  Unknown variables
+-    are left unchanged."""
+-    global _varprog, _varprogb
+-    if isinstance(path, bytes):
+-        if b'$' not in path:
+-            return path
+-        if not _varprogb:
+-            import re
+-            _varprogb = re.compile(br'\$(\w+|\{[^}]*\})', re.ASCII)
+-        search = _varprogb.search
+-        start = b'{'
+-        end = b'}'
+-        environ = getattr(os, 'environb', None)
+-    else:
+-        if '$' not in path:
+-            return path
+-        if not _varprog:
+-            import re
+-            _varprog = re.compile(r'\$(\w+|\{[^}]*\})', re.ASCII)
+-        search = _varprog.search
+-        start = '{'
+-        end = '}'
+-        environ = os.environ
+-    i = 0
+-    while True:
+-        m = search(path, i)
+-        if not m:
+-            break
+-        i, j = m.span(0)
+-        name = m.group(1)
+-        if name.startswith(start) and name.endswith(end):
+-            name = name[1:-1]
+-        try:
+-            if environ is None:
+-                value = os.fsencode(os.environ[os.fsdecode(name)])
+-            else:
+-                value = environ[name]
+-        except KeyError:
+-            i = j
+-        else:
+-            tail = path[j:]
+-            path = path[:i] + value
+-            i = len(path)
+-            path += tail
+-    return path
+ 
+ 
+ # Normalize a path, e.g. A//B, A/./B and A/foo/../B all become A/B.
+@@ -425,7 +319,7 @@
+     return path, True
+ 
+ 
+-supports_unicode_filenames = (sys.platform == 'darwin')
++supports_unicode_filenames = False                                              ###
+ 
+ def relpath(path, start=None):
+     """Return a relative version of a path"""
+@@ -455,3 +349,4 @@
+     if not rel_list:
+         return curdir
+     return join(*rel_list)
++

@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/unittest/suite.py
++++ lib/unittest/suite.py
+@@ -319,3 +319,4 @@
+     _previousTestClass = None
+     _moduleSetUpFailed = False
+     shouldStop = False
++
