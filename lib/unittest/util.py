@@ -1,7 +1,8 @@
 """Various utility functions."""
 
 from collections import namedtuple, OrderedDict
-#from os.path import commonprefix
+import os                                                                       ### Make os.path available
+from os.path import commonprefix
 
 __unittest = True
 

@@ -182,23 +182,23 @@ def format_exception(etype, value, tb, limit=None, chain=True):
     """
     return list(_format_exception_iter(etype, value, tb, limit, chain))
 
-#def format_exception_only(etype, value):
-#    """Format the exception part of a traceback.
-#
-#    The arguments are the exception type and value such as given by
-#    sys.last_type and sys.last_value. The return value is a list of
-#    strings, each ending in a newline.
-#
-#    Normally, the list contains a single string; however, for
-#    SyntaxError exceptions, it contains several lines that (when
-#    printed) display detailed information about where the syntax
-#    error occurred.
-#
-#    The message indicating which exception occurred is always the last
-#    string in the list.
-#
-#    """
-#    return list(_format_exception_only_iter(etype, value))
+def format_exception_only(etype, value):
+    """Format the exception part of a traceback.
+
+    The arguments are the exception type and value such as given by
+    sys.last_type and sys.last_value. The return value is a list of
+    strings, each ending in a newline.
+
+    Normally, the list contains a single string; however, for
+    SyntaxError exceptions, it contains several lines that (when
+    printed) display detailed information about where the syntax
+    error occurred.
+
+    The message indicating which exception occurred is always the last
+    string in the list.
+
+    """
+    return list(_format_exception_only_iter(etype, value))
 
 def _format_exception_only_iter(etype, value):
     # Gracefully handle (the way Python 2.4 and earlier did) the case of
@@ -217,22 +217,25 @@ def _format_exception_only_iter(etype, value):
         return
 
     # It was a syntax error; show exactly where the problem was found.
-    filename = value.filename or "<string>"
-    lineno = str(value.lineno) or '?'
+#    filename = value.filename or "<string>"
+    filename = "<string>"                                                       ###
+#    lineno = str(value.lineno) or '?'
+    lineno = '?'                                                                ###
     yield '  File "{}", line {}\n'.format(filename, lineno)
 
-    badline = value.text
-    offset = value.offset
-    if badline is not None:
-        yield '    {}\n'.format(badline.strip())
-        if offset is not None:
-            caretspace = badline.rstrip('\n')
-            offset = min(len(caretspace), offset) - 1
-            caretspace = caretspace[:offset].lstrip()
-            # non-space whitespace (likes tabs) must be kept for alignment
-            caretspace = ((c.isspace() and c or ' ') for c in caretspace)
-            yield '    {}^\n'.format(''.join(caretspace))
-    msg = value.msg or "<no detail available>"
+#    badline = value.text
+#    offset = value.offset
+#    if badline is not None:
+#        yield '    {}\n'.format(badline.strip())
+#        if offset is not None:
+#            caretspace = badline.rstrip('\n')
+#            offset = min(len(caretspace), offset) - 1
+#            caretspace = caretspace[:offset].lstrip()
+#            # non-space whitespace (likes tabs) must be kept for alignment
+#            caretspace = ((c.isspace() and c or ' ') for c in caretspace)
+#            yield '    {}^\n'.format(''.join(caretspace))
+#    msg = value.msg or "<no detail available>"
+    msg = "<no detail available>"                                               ###
     yield "{}: {}\n".format(stype, msg)
 
 def _format_final_exc_line(etype, value):

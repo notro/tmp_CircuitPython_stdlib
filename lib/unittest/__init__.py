@@ -56,8 +56,7 @@ SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 __unittest = True
 
 from .result import TestResult
-#from .case import (TestCase, FunctionTestCase, SkipTest, skip, skipIf,
-from .case import (TestCase, SkipTest, skip, skipIf,                            ###
+from .case import (TestCase, FunctionTestCase, SkipTest, skip, skipIf,
                    skipUnless, expectedFailure)
 from .suite import BaseTestSuite, TestSuite
 from .loader import (TestLoader, defaultTestLoader, makeSuite, getTestCaseNames,

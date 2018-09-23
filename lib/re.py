@@ -119,10 +119,11 @@ This module also defines an exception 'error'.
 
 """
 
-from ure import *                                                               ###
 #import sys
 #import sre_compile
 #import sre_parse
+import ure                                                                      ###
+from ure import DEBUG                                                           ###
 #try:
 #    import _locale
 #except ImportError:
@@ -152,24 +153,25 @@ from ure import *                                                               
 ## sre exception
 #error = sre_compile.error
 #
-## --------------------------------------------------------------------
-## public interface
-#
-#def match(pattern, string, flags=0):
-#    """Try to apply the pattern at the start of the string, returning
-#    a match object, or None if no match was found."""
+# --------------------------------------------------------------------
+# public interface
+
+def match(pattern, string, flags=0):
+    """Try to apply the pattern at the start of the string, returning
+    a match object, or None if no match was found."""
 #    return _compile(pattern, flags).match(string)
-#
+    return _compile(pattern, flags).match(str(string))                          ###
+
 #def fullmatch(pattern, string, flags=0):
 #    """Try to apply the pattern to all of the string, returning
 #    a match object, or None if no match was found."""
 #    return _compile(pattern, flags).fullmatch(string)
-#
-#def search(pattern, string, flags=0):
-#    """Scan through string looking for a match to the pattern, returning
-#    a match object, or None if no match was found."""
-#    return _compile(pattern, flags).search(string)
-#
+
+def search(pattern, string, flags=0):
+    """Scan through string looking for a match to the pattern, returning
+    a match object, or None if no match was found."""
+    return _compile(pattern, flags).search(string)
+
 #def sub(pattern, repl, string, count=0, flags=0):
 #    """Return the string obtained by replacing the leftmost
 #    non-overlapping occurrences of the pattern in string by the
@@ -189,17 +191,18 @@ from ure import *                                                               
 #    If it is a callable, it's passed the match object and must
 #    return a replacement string to be used."""
 #    return _compile(pattern, flags).subn(repl, string, count)
-#
-#def split(pattern, string, maxsplit=0, flags=0):
-#    """Split the source string by the occurrences of the pattern,
-#    returning a list containing the resulting substrings.  If
-#    capturing parentheses are used in pattern, then the text of all
-#    groups in the pattern are also returned as part of the resulting
-#    list.  If maxsplit is nonzero, at most maxsplit splits occur,
-#    and the remainder of the string is returned as the final element
-#    of the list."""
+
+def split(pattern, string, maxsplit=0, flags=0):
+    """Split the source string by the occurrences of the pattern,
+    returning a list containing the resulting substrings.  If
+    capturing parentheses are used in pattern, then the text of all
+    groups in the pattern are also returned as part of the resulting
+    list.  If maxsplit is nonzero, at most maxsplit splits occur,
+    and the remainder of the string is returned as the final element
+    of the list."""
 #    return _compile(pattern, flags).split(string, maxsplit)
-#
+    return _compile(pattern, flags).split(str(string), maxsplit)                ###
+
 #def findall(pattern, string, flags=0):
 #    """Return a list of all non-overlapping matches in the string.
 #
@@ -218,11 +221,11 @@ from ure import *                                                               
 #
 #        Empty matches are included in the result."""
 #        return _compile(pattern, flags).finditer(string)
-#
-#def compile(pattern, flags=0):
-#    "Compile a regular expression pattern, returning a pattern object."
-#    return _compile(pattern, flags)
-#
+
+def compile(pattern, flags=0):
+    "Compile a regular expression pattern, returning a pattern object."
+    return _compile(pattern, flags)
+
 #def purge():
 #    "Clear the regular expression caches"
 #    _cache.clear()
@@ -266,16 +269,17 @@ def escape(pattern):
                     s.append(c)
         return bytes(s)
 
-## --------------------------------------------------------------------
-## internals
-#
+# --------------------------------------------------------------------
+# internals
+
 #_cache = {}
 #_cache_repl = {}
 #
 #_pattern_type = type(sre_compile.compile("", 0))
-#
+_pattern_type = type(ure.compile("", 0))                                        ###
+
 #_MAXCACHE = 512
-#def _compile(pattern, flags):
+def _compile(pattern, flags):
 #    # internal: compile pattern
 #    bypass_cache = flags & DEBUG
 #    if not bypass_cache:
@@ -285,14 +289,15 @@ def escape(pattern):
 #                return p
 #        except KeyError:
 #            pass
-#    if isinstance(pattern, _pattern_type):
-#        if flags:
-#            raise ValueError(
-#                "Cannot process flags argument with a compiled pattern")
-#        return pattern
+    if isinstance(pattern, _pattern_type):
+        if flags:
+            raise ValueError(
+                "Cannot process flags argument with a compiled pattern")
+        return pattern
 #    if not sre_compile.isstring(pattern):
 #        raise TypeError("first argument must be string or compiled pattern")
 #    p = sre_compile.compile(pattern, flags)
+    p = ure.compile(pattern, flags)                                             ###
 #    if not bypass_cache:
 #        if len(_cache) >= _MAXCACHE:
 #            _cache.clear()
@@ -303,8 +308,8 @@ def escape(pattern):
 #        else:
 #            loc = None
 #        _cache[type(pattern), pattern, flags] = p, loc
-#    return p
-#
+    return p
+
 #def _compile_repl(repl, pattern):
 #    # internal: compile replacement pattern
 #    try:

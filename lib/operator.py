@@ -72,10 +72,10 @@ This is the pure Python implementation of the module.
 #    "Same as abs(a)."
 #    return _abs(a)
 #
-#def add(a, b):
-#    "Same as a + b."
-#    return a + b
-#
+def add(a, b):
+    "Same as a + b."
+    return a + b
+
 #def and_(a, b):
 #    "Same as a & b."
 #    return a & b
@@ -101,14 +101,14 @@ This is the pure Python implementation of the module.
 #    "Same as a % b."
 #    return a % b
 #
-#def mul(a, b):
-#    "Same as a * b."
-#    return a * b
-#
-#def neg(a):
-#    "Same as -a."
-#    return -a
-#
+def mul(a, b):
+    "Same as a * b."
+    return a * b
+
+def neg(a):
+    "Same as -a."
+    return -a
+
 #def or_(a, b):
 #    "Same as a | b."
 #    return a | b
@@ -117,10 +117,10 @@ This is the pure Python implementation of the module.
 #    "Same as +a."
 #    return +a
 #
-#def pow(a, b):
-#    "Same as a ** b."
-#    return a ** b
-#
+def pow(a, b):
+    "Same as a ** b."
+    return a ** b
+
 #def rshift(a, b):
 #    "Same as a >> b."
 #    return a >> b

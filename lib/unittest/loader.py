@@ -28,6 +28,14 @@ class _FailedTest(case.TestCase):
 
     def __getattr__(self, name):
         if name != self._testMethodName:
+            # AttributeError: 'super' object has no attribute '__getattr__'     ###
+            # Fix for the _isnotsuite duck typing call site                     ###
+            if name == '__getitem__':                                           ###
+                raise TypeError                                                 ###
+            # Caused by an error during load_tests()                            ###
+            if name == '__unittest_expecting_failure__':                        ###
+                return False                                                    ###
+            print('\n\n_FailedTest.__getattr__', name)                          ###
             return super(_FailedTest, self).__getattr__(name)
         def testFailure():
             raise self._exception

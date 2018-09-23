@@ -559,33 +559,33 @@ class StatAttributeTests(unittest.TestCase):
 #            os.utime(self.fname, (5, 5), ns=(5, 5))
 
 
-#from test import mapping_tests
-#
-#class EnvironTests(mapping_tests.BasicTestMappingProtocol):
-#    """check that os.environ object conform to mapping protocol"""
-#    type2test = None
-#
-#    def setUp(self):
-#        self.__save = dict(os.environ)
+from test import mapping_tests
+
+class EnvironTests(mapping_tests.BasicTestMappingProtocol):
+    """check that os.environ object conform to mapping protocol"""
+    type2test = None
+
+    def setUp(self):
+        self.__save = dict(os.environ)
 #        if os.supports_bytes_environ:
 #            self.__saveb = dict(os.environb)
-#        for key, value in self._reference().items():
-#            os.environ[key] = value
-#
-#    def tearDown(self):
-#        os.environ.clear()
-#        os.environ.update(self.__save)
+        for key, value in self._reference().items():
+            os.environ[key] = value
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self.__save)
 #        if os.supports_bytes_environ:
 #            os.environb.clear()
 #            os.environb.update(self.__saveb)
-#
-#    def _reference(self):
-#        return {"KEY1":"VALUE1", "KEY2":"VALUE2", "KEY3":"VALUE3"}
-#
-#    def _empty_mapping(self):
-#        os.environ.clear()
-#        return os.environ
-#
+
+    def _reference(self):
+        return {"KEY1":"VALUE1", "KEY2":"VALUE2", "KEY3":"VALUE3"}
+
+    def _empty_mapping(self):
+        os.environ.clear()
+        return os.environ
+
 #    # Bug 1110478
 #    @unittest.skipUnless(os.path.exists('/bin/sh'), 'requires /bin/sh')
 #    def test_update2(self):
@@ -605,17 +605,17 @@ class StatAttributeTests(unittest.TestCase):
 #            self.assertEqual(next(it), "line3\n")
 #            self.assertRaises(StopIteration, next, it)
 #
-#    # Verify environ keys and values from the OS are of the
-#    # correct str type.
-#    def test_keyvalue_types(self):
-#        for key, val in os.environ.items():
-#            self.assertEqual(type(key), str)
-#            self.assertEqual(type(val), str)
-#
-#    def test_items(self):
-#        for key, value in self._reference().items():
-#            self.assertEqual(os.environ.get(key), value)
-#
+    # Verify environ keys and values from the OS are of the
+    # correct str type.
+    def test_keyvalue_types(self):
+        for key, val in os.environ.items():
+            self.assertEqual(type(key), str)
+            self.assertEqual(type(val), str)
+
+    def test_items(self):
+        for key, value in self._reference().items():
+            self.assertEqual(os.environ.get(key), value)
+
 #    # Issue 7310
 #    def test___repr__(self):
 #        """Check that the repr() of os.environ looks like environ({...})."""
@@ -702,18 +702,18 @@ class StatAttributeTests(unittest.TestCase):
 #            key = 'key='
 #            self.assertRaises(OSError, os.environ.__delitem__, key)
 #
-#    def test_key_type(self):
-#        missing = 'missingkey'
-#        self.assertNotIn(missing, os.environ)
-#
-#        with self.assertRaises(KeyError) as cm:
-#            os.environ[missing]
-#        self.assertIs(cm.exception.args[0], missing)
+    def test_key_type(self):
+        missing = 'missingkey'
+        self.assertNotIn(missing, os.environ)
+
+        with self.assertRaises(KeyError) as cm:
+            os.environ[missing]
+        self.assertIs(cm.exception.args[0], missing)
 #        self.assertTrue(cm.exception.__suppress_context__)
-#
-#        with self.assertRaises(KeyError) as cm:
-#            del os.environ[missing]
-#        self.assertIs(cm.exception.args[0], missing)
+
+        with self.assertRaises(KeyError) as cm:
+            del os.environ[missing]
+        self.assertIs(cm.exception.args[0], missing)
 #        self.assertTrue(cm.exception.__suppress_context__)
 
 
@@ -2462,8 +2462,7 @@ class OSErrorTests(unittest.TestCase):
         if support.TESTFN_UNDECODABLE is not None:
             encoded = support.TESTFN_UNDECODABLE
         else:
-#            encoded = os.fsencode(support.TESTFN)
-            encoded = support.TESTFN                                            ###
+            encoded = os.fsencode(support.TESTFN)
         self.bytes_filenames.append(encoded)
         self.bytes_filenames.append(memoryview(encoded))
 

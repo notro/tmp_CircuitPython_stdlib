@@ -9,14 +9,26 @@
 #   Copyright (C) 2006-2013 Python Software Foundation.
 # See C source code for _functools credits/copyright
 
-__all__ = ['update_wrapper', 'wraps', 'WRAPPER_ASSIGNMENTS', 'WRAPPER_UPDATES',
-           'total_ordering', 'cmp_to_key', 'lru_cache', 'reduce', 'partial',
-           'partialmethod', 'singledispatch']
-
+#__all__ = ['update_wrapper', 'wraps', 'WRAPPER_ASSIGNMENTS', 'WRAPPER_UPDATES',
+#           'total_ordering', 'cmp_to_key', 'lru_cache', 'reduce', 'partial',
+#           'partialmethod', 'singledispatch']
+#
 #try:
 #    from _functools import reduce
 #except ImportError:
 #    pass
+#                                                                               ###
+# From python docs                                                              ###
+def reduce(function, iterable, initializer=None):                               ###
+    it = iter(iterable)                                                         ###
+    if initializer is None:                                                     ###
+        value = next(it)                                                        ###
+    else:                                                                       ###
+        value = initializer                                                     ###
+    for element in it:                                                          ###
+        value = function(value, element)                                        ###
+    return value                                                                ###
+#                                                                               ###
 #from abc import get_cache_token
 #from collections import namedtuple
 #from types import MappingProxyType

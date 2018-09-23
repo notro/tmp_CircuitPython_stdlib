@@ -51,7 +51,8 @@ def normcase(s):
     if not isinstance(s, (bytes, str)):
         raise TypeError("normcase() argument must be str or bytes, "
                         "not '{}'".format(s.__class__.__name__))
-    return s
+#    return s
+    return s.lower()                                                            ### FAT
 
 
 # Return whether a path is absolute.
@@ -179,6 +180,8 @@ def lexists(path):
 
 def ismount(path):
     """Test whether a path is a mount point"""
+    if path == '/' or path == b'/':                                             ###
+        return True                                                             ###
     try:
         s1 = os.lstat(path)
     except OSError:
@@ -198,14 +201,15 @@ def ismount(path):
     except OSError:
         return False
 
-    dev1 = s1.st_dev
-    dev2 = s2.st_dev
-    if dev1 != dev2:
-        return True     # path/.. on a different device as path
-    ino1 = s1.st_ino
-    ino2 = s2.st_ino
-    if ino1 == ino2:
-        return True     # path/.. is the same i-node as path
+#     st_dev and st_ino are always zero                                         ###
+#    dev1 = s1.st_dev
+#    dev2 = s2.st_dev
+#    if dev1 != dev2:
+#        return True     # path/.. on a different device as path
+#    ino1 = s1.st_ino
+#    ino2 = s2.st_ino
+#    if ino1 == ino2:
+#        return True     # path/.. is the same i-node as path
     return False
 
 

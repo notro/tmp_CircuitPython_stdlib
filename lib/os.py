@@ -47,38 +47,16 @@ __all__ = ["altsep", "curdir", "pardir", "sep", "pathsep", "linesep",
 # Any new dependencies of the os module and/or changes in path separator
 # requires updating importlib as well.
 #if 'posix' in _names:
-#    name = 'posix'
-name = 'posix'                                                                  ###
-#    linesep = '\n'
-linesep = '\n'                                                                  ###
-#    from posix import *
-from uos import (chdir, getcwd, listdir, remove, rename, rmdir, sep, sync, uname, unlink, urandom)  ###
-                                                                                                    ###
-import collections                                                                                  ###
-import uos                                                                                          ###
-                                                                                                    ###
-stat_result = collections.namedtuple('os.stat_result', ('st_mode', 'st_ino', 'st_dev', 'st_nlink', 'st_uid', 'st_gid', 'st_size', 'st_atime', 'st_mtime', 'st_ctime'))  ###
-                                                                                                    ###
-def stat(path):                                                                                     ###
-    return stat_result(*uos.stat(path))                                                             ###
-                                                                                                    ###
-lstat = stat                                                                                        ###
-                                                                                                    ###
-statvfs_result = collections.namedtuple('os.statvfs_result', ('f_bsize', 'f_frsize', 'f_blocks', 'f_bfree', 'f_bavail', 'f_files', 'f_ffree', 'f_favail', 'f_flag', 'f_namemax'))  ###
-                                                                                                    ###
-def statvfs(path):                                                                                  ###
-    return statvfs_result(*uos.statvfs(path))                                                       ###
-                                                                                                    ###
-def mkdir(path, mode=0o777, dir_fd=None):                                                           ###
-    uos.mkdir(path)                                                                                 ###
-                                                                                                    ###
+if True:                                                                        ###
+    name = 'posix'
+    linesep = '\n'
+    from posix import *
 #    try:
 #        from posix import _exit
 #        __all__.append('_exit')
 #    except ImportError:
 #        pass
-#    import posixpath as path
-import posixpath as path                                                                            ###
+    import posixpath as path
 #
 #    try:
 #        from posix import _have_functions
@@ -775,44 +753,45 @@ __all__.append("walk")
 #
 #    __all__.extend(("environb", "getenvb"))
 #
-#def _fscodec():
+def _fscodec():
 #    encoding = sys.getfilesystemencoding()
-#    if encoding == 'mbcs':
-#        errors = 'strict'
-#    else:
-#        errors = 'surrogateescape'
-#
-#    def fsencode(filename):
-#        """
-#        Encode filename to the filesystem encoding with 'surrogateescape' error
-#        handler, return bytes unchanged. On Windows, use 'strict' error handler if
-#        the file system encoding is 'mbcs' (which is the default encoding).
-#        """
-#        if isinstance(filename, bytes):
-#            return filename
-#        elif isinstance(filename, str):
-#            return filename.encode(encoding, errors)
-#        else:
-#            raise TypeError("expect bytes or str, not %s" % type(filename).__name__)
-#
-#    def fsdecode(filename):
-#        """
-#        Decode filename from the filesystem encoding with 'surrogateescape' error
-#        handler, return str unchanged. On Windows, use 'strict' error handler if
-#        the file system encoding is 'mbcs' (which is the default encoding).
-#        """
-#        if isinstance(filename, str):
-#            return filename
-#        elif isinstance(filename, bytes):
-#            return filename.decode(encoding, errors)
-#        else:
-#            raise TypeError("expect bytes or str, not %s" % type(filename).__name__)
-#
-#    return fsencode, fsdecode
-#
-#fsencode, fsdecode = _fscodec()
-#del _fscodec
-#
+    encoding = 'utf-8'                                                          ###
+    if encoding == 'mbcs':
+        errors = 'strict'
+    else:
+        errors = 'surrogateescape'
+
+    def fsencode(filename):
+        """
+        Encode filename to the filesystem encoding with 'surrogateescape' error
+        handler, return bytes unchanged. On Windows, use 'strict' error handler if
+        the file system encoding is 'mbcs' (which is the default encoding).
+        """
+        if isinstance(filename, bytes):
+            return filename
+        elif isinstance(filename, str):
+            return filename.encode(encoding, errors)
+        else:
+            raise TypeError("expect bytes or str, not %s" % type(filename).__name__)
+
+    def fsdecode(filename):
+        """
+        Decode filename from the filesystem encoding with 'surrogateescape' error
+        handler, return str unchanged. On Windows, use 'strict' error handler if
+        the file system encoding is 'mbcs' (which is the default encoding).
+        """
+        if isinstance(filename, str):
+            return filename
+        elif isinstance(filename, bytes):
+            return filename.decode(encoding, errors)
+        else:
+            raise TypeError("expect bytes or str, not %s" % type(filename).__name__)
+
+    return fsencode, fsdecode
+
+fsencode, fsdecode = _fscodec()
+del _fscodec
+
 ## Supply spawn*() (probably only for Unix)
 #if _exists("fork") and not _exists("spawnv") and _exists("execv"):
 #

@@ -412,7 +412,7 @@ class TimeTestCase(unittest.TestCase):
 #        info = time.get_clock_info('monotonic')
 #        self.assertTrue(info.monotonic)
 #        self.assertFalse(info.adjustable)
-
+#
 #    def test_perf_counter(self):
 #        time.perf_counter()
 #
@@ -445,7 +445,7 @@ class TimeTestCase(unittest.TestCase):
 #        time.clock_settime(time.CLOCK_REALTIME, realtime)
 #        # monotonic must not be affected by system clock updates
 #        self.assertGreaterEqual(t2, t1)
-
+#
     def test_localtime_failure(self):
         # Issue #13847: check for localtime() failure
         invalid_time_t = None
@@ -481,7 +481,7 @@ class TimeTestCase(unittest.TestCase):
 #            self.assertIsInstance(info.adjustable, bool)
 #
 #        self.assertRaises(ValueError, time.get_clock_info, 'xxx')
-
+#
 
 #class TestLocale(unittest.TestCase):
 #    def setUp(self):
@@ -497,7 +497,7 @@ class TimeTestCase(unittest.TestCase):
 #            self.skipTest('could not set locale.LC_ALL to fr_FR')
 #        # This should not cause an exception
 #        time.strftime("%B", (2009,2,1,0,0,0,0,0,0))
-
+#
 
 class _TestAsctimeYear:
     _format = '%d'
@@ -769,7 +769,7 @@ class TestAsctime4dyear(_TestAsctimeYear, _Test4dYear, unittest.TestCase):
 #        lt = pickle.loads(st)
 #        self.assertIs(lt.tm_gmtoff, None)
 #        self.assertIs(lt.tm_zone, None)
-
-
-if __name__ == "__main__":
-    unittest.main()
+#
+#
+#if __name__ == "__main__":
+#    unittest.main()

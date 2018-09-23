@@ -1,6 +1,6 @@
 """Test result object"""
 
-#import io
+import io
 import sys
 import traceback
 
@@ -58,15 +58,15 @@ class TestResult(object):
         "Called when the given test is about to be run"
         self.testsRun += 1
         self._mirrorOutput = False
-        self._setupStdout()
+#        self._setupStdout()
 
-    def _setupStdout(self):
-        if self.buffer:
-            if self._stderr_buffer is None:
-                self._stderr_buffer = io.StringIO()
-                self._stdout_buffer = io.StringIO()
-            sys.stdout = self._stdout_buffer
-            sys.stderr = self._stderr_buffer
+#    def _setupStdout(self):
+#        if self.buffer:
+#            if self._stderr_buffer is None:
+#                self._stderr_buffer = io.StringIO()
+#                self._stdout_buffer = io.StringIO()
+#            sys.stdout = self._stdout_buffer
+#            sys.stderr = self._stderr_buffer
 
     def startTestRun(self):
         """Called once before any tests are executed.
@@ -76,29 +76,29 @@ class TestResult(object):
 
     def stopTest(self, test):
         """Called when the given test has been run"""
-        self._restoreStdout()
+#        self._restoreStdout()
         self._mirrorOutput = False
 
-    def _restoreStdout(self):
-        if self.buffer:
-            if self._mirrorOutput:
-                output = sys.stdout.getvalue()
-                error = sys.stderr.getvalue()
-                if output:
-                    if not output.endswith('\n'):
-                        output += '\n'
-                    self._original_stdout.write(STDOUT_LINE % output)
-                if error:
-                    if not error.endswith('\n'):
-                        error += '\n'
-                    self._original_stderr.write(STDERR_LINE % error)
-
-            sys.stdout = self._original_stdout
-            sys.stderr = self._original_stderr
-            self._stdout_buffer.seek(0)
-            self._stdout_buffer.truncate()
-            self._stderr_buffer.seek(0)
-            self._stderr_buffer.truncate()
+#    def _restoreStdout(self):
+#        if self.buffer:
+#            if self._mirrorOutput:
+#                output = sys.stdout.getvalue()
+#                error = sys.stderr.getvalue()
+#                if output:
+#                    if not output.endswith('\n'):
+#                        output += '\n'
+#                    self._original_stdout.write(STDOUT_LINE % output)
+#                if error:
+#                    if not error.endswith('\n'):
+#                        error += '\n'
+#                    self._original_stderr.write(STDERR_LINE % error)
+#
+#            sys.stdout = self._original_stdout
+#            sys.stderr = self._original_stderr
+#            self._stdout_buffer.seek(0)
+#            self._stdout_buffer.truncate()
+#            self._stderr_buffer.seek(0)
+#            self._stderr_buffer.truncate()
 
     def stopTestRun(self):
         """Called once after all tests are executed.
@@ -183,17 +183,17 @@ class TestResult(object):
         else:
             msgLines = traceback.format_exception(exctype, value, tb)
 
-        if self.buffer:
-            output = sys.stdout.getvalue()
-            error = sys.stderr.getvalue()
-            if output:
-                if not output.endswith('\n'):
-                    output += '\n'
-                msgLines.append(STDOUT_LINE % output)
-            if error:
-                if not error.endswith('\n'):
-                    error += '\n'
-                msgLines.append(STDERR_LINE % error)
+#        if self.buffer:
+#            output = sys.stdout.getvalue()
+#            error = sys.stderr.getvalue()
+#            if output:
+#                if not output.endswith('\n'):
+#                    output += '\n'
+#                msgLines.append(STDOUT_LINE % output)
+#            if error:
+#                if not error.endswith('\n'):
+#                    error += '\n'
+#                msgLines.append(STDERR_LINE % error)
         return ''.join(msgLines)
 
 
