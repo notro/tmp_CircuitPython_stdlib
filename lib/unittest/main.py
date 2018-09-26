@@ -234,7 +234,17 @@ class TestProgram(object):
 #
 #        return parser
 
+    def gc_collect(self):                                                       ###
+        if self.verbosity > 2:                                                  ###
+            mfree = gc.mem_free()                                               ###
+        gc.collect()                                                            ###
+        if self.verbosity > 2:                                                  ###
+            tpl = 'gc_collect: mem_free: {:3.0f}k -> {:3.0f}k\n'                ###
+            msg = tpl.format(mfree / 1024, gc.mem_free() / 1024)                ###
+            self.testRunner.stream.write(msg)                                   ###
+                                                                                ###
     def cleanup(self):                                                          ###
+        self.result = None                                                      ###
         for mod in sys.modules:                                                 ###
             if mod not in self.saved_modules:                                   ###
                 if self.verbosity > 2:                                          ###
@@ -247,15 +257,13 @@ class TestProgram(object):
                     print('del globals()[{!r}]'.format(name))                   ###
                 del globals()[name]                                             ###
                                                                                 ###
-        gc.collect()                                                            ###
-        time.sleep(0.1)                                                         ###
-        gc.collect()                                                            ###
-        time.sleep(0.1)                                                         ###
-        gc.collect()                                                            ###
-        ########print('globals()', len(globals()), globals())                           ###
-        ########print()                                                                 ###
-        ########print('sys.modules', len(sys.modules), sys.modules)                     ###
-        ########print()                                                                 ###
+        self.gc_collect()                                                       ###
+                                                                                ###
+        if self.verbosity > 3:                                                  ###
+            print('globals()', len(globals()), globals())                       ###
+            print()                                                             ###
+            print('sys.modules', len(sys.modules), sys.modules)                 ###
+            print()                                                             ###
                                                                                 ###
     def _do_discovery_separate(self, loader):                                   ###
         run = 0                                                                 ###
@@ -277,9 +285,10 @@ class TestProgram(object):
             heading += '# {:50}(mem_free: {:3.0f}k)\n'.format(path, gc.mem_free() / 1024)  ###
             heading += '#\n'                                                    ###
             heading += '\n'                                                     ###
-            self.testRunner.stream.write(heading)                               ###                                                                              ###
+            self.testRunner.stream.write(heading)                               ###
                                                                                 ###
             self.test = loader.discover(self.start, path)                       ###
+            self.gc_collect()                                                   ###
             self.runTests()                                                     ###
                                                                                 ###
             run += self.result.testsRun                                         ###
