@@ -8,10 +8,6 @@ mpy_cross = '/home/pi/circuitpython/workdirs/test/circuitpython/mpy-cross/mpy-cr
 src = Path('lib')
 
 for py in src.glob('**/*.py'):
-    if py.name == '__init__.py':
-        #print('__init__.py:', py)
-        continue
-
     mpy = py.with_suffix('.mpy')
     if mpy.exists() and mpy.stat().st_mtime > py.stat().st_mtime:
         #print('skip:', mpy)
