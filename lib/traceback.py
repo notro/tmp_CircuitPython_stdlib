@@ -155,21 +155,21 @@ def _format_exception_iter(etype, value, tb, limit, chain):
             yield from _format_list_iter(_extract_tb_iter(tb, limit=limit))
         yield from _format_exception_only_iter(type(value), value)
 
-#def print_exception(etype, value, tb, limit=None, file=None, chain=True):
-#    """Print exception up to 'limit' stack trace entries from 'tb' to 'file'.
-#
-#    This differs from print_tb() in the following ways: (1) if
-#    traceback is not None, it prints a header "Traceback (most recent
-#    call last):"; (2) it prints the exception type and value after the
-#    stack trace; (3) if type is SyntaxError and value has the
-#    appropriate format, it prints the line where the syntax error
-#    occurred with a caret on the next line indicating the approximate
-#    position of the error.
-#    """
-#    if file is None:
-#        file = sys.stderr
-#    for line in _format_exception_iter(etype, value, tb, limit, chain):
-#        print(line, file=file, end="")
+def print_exception(etype, value, tb, limit=None, file=None, chain=True):
+    """Print exception up to 'limit' stack trace entries from 'tb' to 'file'.
+
+    This differs from print_tb() in the following ways: (1) if
+    traceback is not None, it prints a header "Traceback (most recent
+    call last):"; (2) it prints the exception type and value after the
+    stack trace; (3) if type is SyntaxError and value has the
+    appropriate format, it prints the line where the syntax error
+    occurred with a caret on the next line indicating the approximate
+    position of the error.
+    """
+    if file is None:
+        file = sys.stderr
+    for line in _format_exception_iter(etype, value, tb, limit, chain):
+        print(line, file=file, end="")
 
 def format_exception(etype, value, tb, limit=None, chain=True):
     """Format a stack trace and the exception information.
