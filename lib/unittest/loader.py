@@ -3,7 +3,7 @@
 import os
 #import re
 import sys
-#import traceback
+import traceback
 import types
 import functools
 
@@ -43,8 +43,7 @@ class _FailedTest(case.TestCase):
 
 
 def _make_failed_import_test(name, suiteClass):
-#    message = 'Failed to import test module: %s\n%s' % (name, traceback.format_exc())
-    message = 'Failed to import test module: %s' % (name,)                      ###
+    message = 'Failed to import test module: %s\n%s' % (name, traceback.format_exc())
     return _make_failed_test(name, ImportError(message), suiteClass)
 
 def _make_failed_load_tests(name, exception, suiteClass):

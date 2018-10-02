@@ -256,10 +256,10 @@ def _some_str(value):
 #    """Shorthand for 'print_exception(*sys.exc_info(), limit, file)'."""
 #    print_exception(*sys.exc_info(), limit=limit, file=file, chain=chain)
 #
-#def format_exc(limit=None, chain=True):
-#    """Like print_exc() but return a string."""
-#    return "".join(format_exception(*sys.exc_info(), limit=limit, chain=chain))
-#
+def format_exc(limit=None, chain=True):
+    """Like print_exc() but return a string."""
+    return "".join(format_exception(*sys.exc_info(), limit=limit, chain=chain))
+
 #def print_last(limit=None, file=None, chain=True):
 #    """This is a shorthand for 'print_exception(sys.last_type,
 #    sys.last_value, sys.last_traceback, limit, file)'."""
