@@ -17,7 +17,21 @@ Special cases:
 Caveats so far:
 - skip on Test classes are not working (can probably be fixed like for functions)
 - fnmatch: translate(): ```\Z(?ms)``` is dropped from the regex since it's not supported by the ```ure``` module
-- many more...
+- datetime:
+```
+# CPython calls datetime.__eq__
+>>> from datetime import date, datetime
+>>> date(2018, 1, 1) == datetime(2018, 1, 1)
+False
+
+# Micropython calls date.__eq__
+>>> from datetime import date, datetime
+>>> date(2018, 1, 1) == datetime(2018, 1, 1)
+date.__eq__(datetime.datetime(2018, 1, 1, 0, 0))
+True
+
+```
+- many more... probably
 
 
 Test script to run on the board:
@@ -50,4 +64,49 @@ unittest.main(module=None, verbosity=verbosity, start='/lib/unittest/test', sepa
 unittest.main(module='test.test_os', verbosity=verbosity)
 
 
+```
+
+Memory use
+----------
+
+Some of the modules like ```datetime``` and ```logging``` use a lot of memory.
+
+```
+import gc
+import sys
+
+for modstr in [
+    'contextlib', 'datetime', 'difflib', 'fnmatch', 'functools', 'io',
+    'itertools', 'logging', 'operator', 'os', 're', 'shutil', 'stat',
+    'tempfile', 'time', 'traceback', 'types', 'warnings', 'unittest',
+    ]:
+    gc.collect()
+    free = gc.mem_free()
+    mod = __import__(modstr)
+    used = free - gc.mem_free()
+    print('{:15} {:6d} bytes'.format(modstr, used))
+    mod = None
+    for m in sys.modules:
+        del sys.modules[m]
+
+
+contextlib        4144 bytes
+datetime         33472 bytes
+difflib          19552 bytes
+fnmatch          15408 bytes
+functools          864 bytes
+io                 256 bytes
+itertools         5520 bytes
+logging          35344 bytes
+operator           960 bytes
+os                9824 bytes
+re                1648 bytes
+shutil           16192 bytes
+stat              1936 bytes
+tempfile         17920 bytes
+time              2576 bytes
+traceback         2816 bytes
+types              752 bytes
+warnings           432 bytes
+unittest         84320 bytes
 ```
