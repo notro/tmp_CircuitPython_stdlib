@@ -104,7 +104,8 @@ def strftime(_format, t=None):
 
     s = ''
     modifier = False
-    pad_with_spaces = False
+    flag_pad = None
+    flag_pad_width = None
 
     for c in _format:
         if c == '%':
@@ -113,12 +114,33 @@ def strftime(_format, t=None):
                 s += '%'
             else:
                 modifier = True
+            continue
 
-        elif modifier:
+        if not modifier:
+            s += c
+
+        else:
             if c == '_':
-                pad_with_spaces = True
+                flag_pad = ''
                 continue
-            modifier = False
+            if c == '-':
+                flag_pad = ''
+                flag_pad_width = ''
+                continue
+            if c == '0' and flag_pad_width is None:
+                flag_pad = '0'
+                continue
+            if c.isdigit():
+                if flag_pad_width is None:
+                    flag_pad_width = c
+                else:
+                    flag_pad_width += c
+                continue
+
+            # Used by most
+            pad = '0' if flag_pad is None else flag_pad
+            pad += '2' if flag_pad_width is None else flag_pad_width
+
             if c == 'a':
                 s += wday_names[t.tm_wday][:3]
             elif c == 'A':
@@ -130,26 +152,23 @@ def strftime(_format, t=None):
             elif c == 'c':
                 s += strftime('%a %b %d %H:%M:%S %Y', t)
             elif c == 'd':
-                s += '{:{pad}d}'.format(t.tm_mday, pad='2' if pad_with_spaces else '02')
+                s += '{:{pad}d}'.format(t.tm_mday, pad=pad)
             elif c == 'H':
-                #s += '{:02d}'.format(t.tm_hour)
-                s += '{:{pad}d}'.format(t.tm_hour, pad='2' if pad_with_spaces else '02')
+                s += '{:{pad}d}'.format(t.tm_hour, pad=pad)
             elif c == 'I':
                 s += 'TODO'
             elif c == 'j':
-                #s += '{:03d}'.format(t.tm_yday)
-                s += '{:{pad}d}'.format(t.tm_yday, pad='3' if pad_with_spaces else '03')
+                pad = '0' if flag_pad is None else flag_pad
+                pad += '3' if flag_pad_width is None else flag_pad_width
+                s += '{:{pad}d}'.format(t.tm_yday, pad=pad)
             elif c == 'm':
-                #s += '{:02d}'.format(t.tm_mon)
-                s += '{:{pad}d}'.format(t.tm_mon, pad='2' if pad_with_spaces else '02')
+                s += '{:{pad}d}'.format(t.tm_mon, pad=pad)
             elif c == 'M':
-                #s += '{:02d}'.format(t.tm_min)
-                s += '{:{pad}d}'.format(t.tm_min, pad='2' if pad_with_spaces else '02')
+                s += '{:{pad}d}'.format(t.tm_min, pad=pad)
             elif c == 'p':
                 s += 'TODO'
             elif c == 'S':
-                #s += '{:02d}'.format(t.tm_sec)
-                s += '{:{pad}d}'.format(t.tm_sec, pad='2' if pad_with_spaces else '02')
+                s += '{:{pad}d}'.format(t.tm_sec, pad=pad)
             elif c == 'U':
                 s += 'TODO'
             elif c == 'w':
@@ -161,17 +180,20 @@ def strftime(_format, t=None):
             elif c == 'X':
                 s += strftime('%H:%M:%S', t)
             elif c == 'y':
-                s += '{:d}'.format(t.tm_year % 100)
+                s += '{:{pad}d}'.format(t.tm_year % 100, pad=pad)
             elif c == 'Y':
-                s += '{:d}'.format(t.tm_year)
+                pad = '0' if flag_pad is None else flag_pad
+                pad += '' if flag_pad_width is None else flag_pad_width
+                s += '{:{pad}d}'.format(t.tm_year, pad=pad)
             elif c == 'z':
                 s += 'TODO'
             else:
+                # Doesn't recognise this one
                 s += '%' + c
-            pad_with_spaces = False
 
-        else:
-            s += c
+            modifier = False
+            flag_pad = None
+            flag_pad_width = None
 
     return s
 
