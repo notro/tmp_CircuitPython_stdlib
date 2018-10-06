@@ -1,0 +1,277 @@
+--- <CPython-3.4.9>/datetime.py
++++ lib/datetime.py
+@@ -299,6 +299,11 @@
+ 
+     return q
+ 
++# float._as_integer_ratio() is not implemented                                  ###
++# We only need microsecond resolution and the value is rounded in _divide_and_round()  ###
++def _as_integer_ratio(value):                                                   ###
++    return int(value * 1000000), 1000000                                        ###
++                                                                                ###
+ class timedelta:
+     """Represent the difference between two datetime objects.
+ 
+@@ -316,7 +321,6 @@
+     Representation: (days, seconds, microseconds).  Why?  Because I
+     felt like it.
+     """
+-    __slots__ = '_days', '_seconds', '_microseconds'
+ 
+     def __new__(cls, days=0, seconds=0, microseconds=0,
+                 milliseconds=0, minutes=0, hours=0, weeks=0):
+@@ -526,7 +530,7 @@
+                              self._microseconds * other)
+         if isinstance(other, float):
+             usec = self._to_microseconds()
+-            a, b = other.as_integer_ratio()
++            a, b = _as_integer_ratio(other)                                     ###
+             return timedelta(0, 0, _divide_and_round(usec * a, b))
+         return NotImplemented
+ 
+@@ -554,7 +558,7 @@
+         if isinstance(other, int):
+             return timedelta(0, 0, _divide_and_round(usec, other))
+         if isinstance(other, float):
+-            a, b = other.as_integer_ratio()
++            a, b = _as_integer_ratio(other)                                     ###
+             return timedelta(0, 0, _divide_and_round(b * usec, a))
+ 
+     def __mod__(self, other):
+@@ -620,13 +624,8 @@
+                 self._seconds != 0 or
+                 self._microseconds != 0)
+ 
+-    # Pickle support.
+-
+     def _getstate(self):
+         return (self._days, self._seconds, self._microseconds)
+-
+-    def __reduce__(self):
+-        return (self.__class__, self._getstate())
+ 
+ timedelta.min = timedelta(-999999999)
+ timedelta.max = timedelta(days=999999999, hours=23, minutes=59, seconds=59,
+@@ -661,21 +660,14 @@
+     Properties (readonly):
+     year, month, day
+     """
+-    __slots__ = '_year', '_month', '_day'
+-
+-    def __new__(cls, year, month=None, day=None):
++
++    def __new__(cls, year, month, day):                                         ###
+         """Constructor.
+ 
+         Arguments:
+ 
+         year, month, day (required, base 1)
+         """
+-        if (isinstance(year, bytes) and len(year) == 4 and
+-            1 <= year[2] <= 12 and month is None):  # Month is sane
+-            # Pickle support
+-            self = object.__new__(cls)
+-            self.__setstate(year)
+-            return self
+         _check_date_fields(year, month, day)
+         self = object.__new__(cls)
+         self._year = year
+@@ -906,21 +898,10 @@
+                 week = 0
+         return year, week+1, day+1
+ 
+-    # Pickle support.
+-
+     def _getstate(self):
+         yhi, ylo = divmod(self._year, 256)
+         return bytes([yhi, ylo, self._month, self._day]),
+ 
+-    def __setstate(self, string):
+-        if len(string) != 4 or not (1 <= string[2] <= 12):
+-            raise TypeError("not enough arguments")
+-        yhi, ylo, self._month, self._day = string
+-        self._year = yhi * 256 + ylo
+-
+-    def __reduce__(self):
+-        return (self.__class__, self._getstate())
+-
+ _date_class = date  # so functions w/ args named "date" can get at the class
+ 
+ date.min = date(1, 1, 1)
+@@ -932,7 +913,6 @@
+ 
+     Subclasses must override the name(), utcoffset() and dst() methods.
+     """
+-    __slots__ = ()
+     def tzname(self, dt):
+         "datetime -> string name of time zone."
+         raise NotImplementedError("tzinfo subclass must override tzname()")
+@@ -976,24 +956,6 @@
+                                  "results; cannot convert")
+         return dt + dtdst
+ 
+-    # Pickle support.
+-
+-    def __reduce__(self):
+-        getinitargs = getattr(self, "__getinitargs__", None)
+-        if getinitargs:
+-            args = getinitargs()
+-        else:
+-            args = ()
+-        getstate = getattr(self, "__getstate__", None)
+-        if getstate:
+-            state = getstate()
+-        else:
+-            state = getattr(self, "__dict__", None) or None
+-        if state is None:
+-            return (self.__class__, args)
+-        else:
+-            return (self.__class__, args, state)
+-
+ _tzinfo_class = tzinfo
+ 
+ class time:
+@@ -1030,10 +992,6 @@
+         tzinfo (default to None)
+         """
+         self = object.__new__(cls)
+-        if isinstance(hour, bytes) and len(hour) == 6:
+-            # Pickle support
+-            self.__setstate(hour, minute or None)
+-            return self
+         _check_tzinfo_arg(tzinfo)
+         _check_time_fields(hour, minute, second, microsecond)
+         self._hour = hour
+@@ -1276,8 +1234,6 @@
+         offset = self.utcoffset() or timedelta(0)
+         return timedelta(hours=self.hour, minutes=self.minute) != offset
+ 
+-    # Pickle support.
+-
+     def _getstate(self):
+         us2, us3 = divmod(self._microsecond, 256)
+         us1, us2 = divmod(us2, 256)
+@@ -1288,20 +1244,6 @@
+         else:
+             return (basestate, self._tzinfo)
+ 
+-    def __setstate(self, string, tzinfo):
+-        if len(string) != 6 or string[0] >= 24:
+-            raise TypeError("an integer is required")
+-        (self._hour, self._minute, self._second,
+-         us1, us2, us3) = string
+-        self._microsecond = (((us1 << 8) | us2) << 8) | us3
+-        if tzinfo is None or isinstance(tzinfo, _tzinfo_class):
+-            self._tzinfo = tzinfo
+-        else:
+-            raise TypeError("bad tzinfo state arg %r" % tzinfo)
+-
+-    def __reduce__(self):
+-        return (time, self._getstate())
+-
+ _time_class = time  # so functions w/ args named "time" can get at the class
+ 
+ time.min = time(0, 0, 0)
+@@ -1315,16 +1257,8 @@
+     instance of a tzinfo subclass. The remaining arguments may be ints.
+     """
+ 
+-    __slots__ = date.__slots__ + (
+-        '_hour', '_minute', '_second',
+-        '_microsecond', '_tzinfo')
+-    def __new__(cls, year, month=None, day=None, hour=0, minute=0, second=0,
++    def __new__(cls, year, month, day, hour=0, minute=0, second=0,              ###
+                 microsecond=0, tzinfo=None):
+-        if isinstance(year, bytes) and len(year) == 10:
+-            # Pickle support
+-            self = date.__new__(cls, year[:4])
+-            self.__setstate(year, month)
+-            return self
+         _check_tzinfo_arg(tzinfo)
+         _check_time_fields(hour, minute, second, microsecond)
+         self = date.__new__(cls, year, month, day)
+@@ -1367,14 +1301,7 @@
+ 
+         A timezone info object may be passed in as well.
+         """
+-        frac, t = _math.modf(t)
+-        us = round(frac * 1e6)
+-        if us >= 1000000:
+-            t += 1
+-            us -= 1000000
+-        elif us < 0:
+-            t -= 1
+-            us += 1000000
++        us = 0                                                                  ###
+ 
+         converter = _time.gmtime if utc else _time.localtime
+         y, m, d, hh, mm, ss, weekday, jday, dst = converter(t)
+@@ -1775,8 +1702,6 @@
+         seconds = self.hour * 3600 + self.minute * 60 + self.second
+         return hash(timedelta(days, seconds, self.microsecond) - tzoff)
+ 
+-    # Pickle support.
+-
+     def _getstate(self):
+         yhi, ylo = divmod(self._year, 256)
+         us2, us3 = divmod(self._microsecond, 256)
+@@ -1788,19 +1713,6 @@
+             return (basestate,)
+         else:
+             return (basestate, self._tzinfo)
+-
+-    def __setstate(self, string, tzinfo):
+-        (yhi, ylo, self._month, self._day, self._hour,
+-         self._minute, self._second, us1, us2, us3) = string
+-        self._year = yhi * 256 + ylo
+-        self._microsecond = (((us1 << 8) | us2) << 8) | us3
+-        if tzinfo is None or isinstance(tzinfo, _tzinfo_class):
+-            self._tzinfo = tzinfo
+-        else:
+-            raise TypeError("bad tzinfo state arg %r" % tzinfo)
+-
+-    def __reduce__(self):
+-        return (self.__class__, self._getstate())
+ 
+ 
+ datetime.min = datetime(1, 1, 1)
+@@ -1820,14 +1732,13 @@
+     return week1monday
+ 
+ class timezone(tzinfo):
+-    __slots__ = '_offset', '_name'
+ 
+     # Sentinel value to disallow None
+-    _Omitted = object()
++    _Omitted = 0xaaaabbbb                                                       ###
+     def __new__(cls, offset, name=_Omitted):
+         if not isinstance(offset, timedelta):
+             raise TypeError("offset must be a timedelta")
+-        if name is cls._Omitted:
++        if name == cls._Omitted:                                                ###
+             if not offset:
+                 return cls.utc
+             name = None
+@@ -1845,16 +1756,10 @@
+ 
+     @classmethod
+     def _create(cls, offset, name=None):
+-        self = tzinfo.__new__(cls)
++        self = object.__new__(cls)                                              ###
+         self._offset = offset
+         self._name = name
+         return self
+-
+-    def __getinitargs__(self):
+-        """pickle support"""
+-        if self._name is None:
+-            return (self._offset,)
+-        return (self._offset, self._name)
+ 
+     def __eq__(self, other):
+         if type(other) != timezone:
+@@ -2148,3 +2053,4 @@
+     # appropriate to maintain a single module level docstring and
+     # remove the following line.
+     from _datetime import __doc__
++

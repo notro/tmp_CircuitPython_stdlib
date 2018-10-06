@@ -81,10 +81,17 @@ def find_files(fork, src, args):
             if filename.endswith('.mpy'):
                 continue
 
-            if args.filter and args.filter not in filename:
+            if filename[-4].isdigit() or os.path.exists(os.path.join(dirpath, filename[:-3] + '2.py')):
+                if args.verbose > 1:
+                    sys.stdout.write('Skip split file: {}\n'.format(filename))
                 continue
 
-            if args.verbose ==0:
+            if args.filter and args.filter not in filename:
+                if args.verbose > 1:
+                    sys.stdout.write('Filtered: {}\n'.format(filename))
+                continue
+
+            if args.verbose == 0:
                 sys.stdout.write('.')
                 sys.stdout.flush()
             else:

@@ -1847,7 +1847,7 @@
  @contextlib.contextmanager
  def swap_attr(obj, attr, new_val):
      """Temporary swap out an attribute with a new object.
-@@ -2009,296 +237,6 @@
+@@ -2009,255 +237,9 @@
          finally:
              delattr(obj, attr)
  
@@ -2092,7 +2092,8 @@
 -                    pass
 -
 -
--def patch(test_instance, object_to_patch, attr_name, new_value):
++    return False                                                                ###
+ def patch(test_instance, object_to_patch, attr_name, new_value):
 -    """Override 'object_to_patch'.'attr_name' with 'new_value'.
 -
 -    Also, add a cleanup procedure to 'test_instance' to restore
@@ -2100,32 +2101,24 @@
 -    The 'attr_name' should be a valid attribute for 'object_to_patch'.
 -
 -    """
--    # check that 'attr_name' is a real attribute for 'object_to_patch'
--    # will raise AttributeError if it does not exist
--    getattr(object_to_patch, attr_name)
--
--    # keep a copy of the old value
--    attr_is_local = False
--    try:
--        old_value = object_to_patch.__dict__[attr_name]
--    except (AttributeError, KeyError):
--        old_value = getattr(object_to_patch, attr_name, None)
--    else:
--        attr_is_local = True
--
--    # restore the value when the test is done
--    def cleanup():
+     # check that 'attr_name' is a real attribute for 'object_to_patch'
+     # will raise AttributeError if it does not exist
+     getattr(object_to_patch, attr_name)
+@@ -2273,10 +255,7 @@
+ 
+     # restore the value when the test is done
+     def cleanup():
 -        if attr_is_local:
--            setattr(object_to_patch, attr_name, old_value)
+             setattr(object_to_patch, attr_name, old_value)
 -        else:
 -            delattr(object_to_patch, attr_name)
--
--    test_instance.addCleanup(cleanup)
--
--    # actually override the attribute
--    setattr(object_to_patch, attr_name, new_value)
--
--
+ 
+     test_instance.addCleanup(cleanup)
+ 
+@@ -2284,21 +263,4 @@
+     setattr(object_to_patch, attr_name, new_value)
+ 
+ 
 -def run_in_subinterp(code):
 -    """
 -    Run code in a subinterpreter. Raise unittest.SkipTest if the tracemalloc
@@ -2144,5 +2137,4 @@
 -                                     "memory allocations")
 -    import _testcapi
 -    return _testcapi.run_in_subinterp(code)
-+    return False                                                                ###
 +

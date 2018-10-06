@@ -239,3 +239,27 @@ def swap_attr(obj, attr, new_val):
 
 def can_symlink():
     return False                                                                ###
+def patch(test_instance, object_to_patch, attr_name, new_value):
+    # check that 'attr_name' is a real attribute for 'object_to_patch'
+    # will raise AttributeError if it does not exist
+    getattr(object_to_patch, attr_name)
+
+    # keep a copy of the old value
+    attr_is_local = False
+    try:
+        old_value = object_to_patch.__dict__[attr_name]
+    except (AttributeError, KeyError):
+        old_value = getattr(object_to_patch, attr_name, None)
+    else:
+        attr_is_local = True
+
+    # restore the value when the test is done
+    def cleanup():
+            setattr(object_to_patch, attr_name, old_value)
+
+    test_instance.addCleanup(cleanup)
+
+    # actually override the attribute
+    setattr(object_to_patch, attr_name, new_value)
+
+

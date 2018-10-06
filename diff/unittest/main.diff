@@ -1,6 +1,6 @@
 --- <CPython-3.4.9>/unittest/main.py
 +++ lib/unittest/main.py
-@@ -1,29 +1,15 @@
+@@ -1,29 +1,16 @@
  """Unittest main program"""
  
  import sys
@@ -12,6 +12,7 @@
  
  from . import loader, runner
 -from .signals import installHandler
++from . import mp_function_attributes                                            ###
  
  __unittest = True
  
@@ -33,7 +34,7 @@
  
  def _convert_name(name):
      # on Linux / Mac OS X 'foo.PY' is not importable, but on
-@@ -57,23 +43,30 @@
+@@ -57,23 +44,30 @@
  
      def __init__(self, module='__main__', defaultTest=None, argv=None,
                      testRunner=None, testLoader=loader.defaultTestLoader,
@@ -70,7 +71,7 @@
              # even if DreprecationWarnings are ignored by default
              # print them anyway unless other warnings settings are
              # specified by the warnings arg or the -W python flag
-@@ -88,41 +81,22 @@
+@@ -88,41 +82,22 @@
          self.defaultTest = defaultTest
          self.testRunner = testRunner
          self.testLoader = testLoader
@@ -122,7 +123,7 @@
  
          if self.tests:
              self.testNames = _convert_names(self.tests)
-@@ -137,6 +111,7 @@
+@@ -137,6 +112,7 @@
          else:
              self.testNames = list(self.defaultTest)
          self.createTests()
@@ -130,7 +131,7 @@
  
      def createTests(self):
          if self.testNames is None:
-@@ -145,88 +120,99 @@
+@@ -145,88 +121,110 @@
              self.test = self.testLoader.loadTestsFromNames(self.testNames,
                                                             self.module)
  
@@ -200,7 +201,18 @@
 -        return parser
 -
 +
++    def gc_collect(self):                                                       ###
++        if self.verbosity > 2:                                                  ###
++            mfree = gc.mem_free()                                               ###
++        gc.collect()                                                            ###
++        if self.verbosity > 2:                                                  ###
++            tpl = 'gc_collect: mem_free: {:3.0f}k -> {:3.0f}k\n'                ###
++            msg = tpl.format(mfree / 1024, gc.mem_free() / 1024)                ###
++            self.testRunner.stream.write(msg)                                   ###
++                                                                                ###
 +    def cleanup(self):                                                          ###
++        self.result = None                                                      ###
++        mp_function_attributes.func_clearattrs()                                ###
 +        for mod in sys.modules:                                                 ###
 +            if mod not in self.saved_modules:                                   ###
 +                if self.verbosity > 2:                                          ###
@@ -213,15 +225,13 @@
 +                    print('del globals()[{!r}]'.format(name))                   ###
 +                del globals()[name]                                             ###
 +                                                                                ###
-+        gc.collect()                                                            ###
-+        time.sleep(0.1)                                                         ###
-+        gc.collect()                                                            ###
-+        time.sleep(0.1)                                                         ###
-+        gc.collect()                                                            ###
-+        ########print('globals()', len(globals()), globals())                           ###
-+        ########print()                                                                 ###
-+        ########print('sys.modules', len(sys.modules), sys.modules)                     ###
-+        ########print()                                                                 ###
++        self.gc_collect()                                                       ###
++                                                                                ###
++        if self.verbosity > 3:                                                  ###
++            print('globals()', len(globals()), globals())                       ###
++            print()                                                             ###
++            print('sys.modules', len(sys.modules), sys.modules)                 ###
++            print()                                                             ###
 +                                                                                ###
 +    def _do_discovery_separate(self, loader):                                   ###
 +        run = 0                                                                 ###
@@ -234,7 +244,8 @@
 +                                                                                ###
 +        for path in sorted(os.listdir(self.start)):                             ###
 +            if not fnmatch(path, self.pattern):                                 ###
-+                print('SKIPPED', path)                                          ###
++                if self.verbosity > 2:                                          ###
++                    self.testRunner.stream.write('SKIPPED {}\n'.format(path))   ###
 +                continue                                                        ###
 +                                                                                ###
 +            heading = '\n\n'                                                    ###
@@ -243,9 +254,10 @@
 +            heading += '# {:50}(mem_free: {:3.0f}k)\n'.format(path, gc.mem_free() / 1024)  ###
 +            heading += '#\n'                                                    ###
 +            heading += '\n'                                                     ###
-+            self.testRunner.stream.write(heading)                               ###                                                                              ###
++            self.testRunner.stream.write(heading)                               ###
 +                                                                                ###
 +            self.test = loader.discover(self.start, path)                       ###
++            self.gc_collect()                                                   ###
 +            self.runTests()                                                     ###
 +                                                                                ###
 +            run += self.result.testsRun                                         ###
@@ -309,7 +321,7 @@
          if self.testRunner is None:
              self.testRunner = runner.TextTestRunner
          if isinstance(self.testRunner, type):
-@@ -238,11 +224,17 @@
+@@ -238,11 +236,17 @@
              except TypeError:
                  # didn't accept the verbosity, buffer or failfast arguments
                  testRunner = self.testRunner()

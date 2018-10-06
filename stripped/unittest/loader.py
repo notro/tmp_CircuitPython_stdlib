@@ -2,6 +2,7 @@
 
 import os
 import sys
+import traceback
 import types
 import functools
 
@@ -37,7 +38,7 @@ class _FailedTest(case.TestCase):
 
 
 def _make_failed_import_test(name, suiteClass):
-    message = 'Failed to import test module: %s' % (name,)                      ###
+    message = 'Failed to import test module: %s\n%s' % (name, traceback.format_exc())
     return _make_failed_test(name, ImportError(message), suiteClass)
 
 def _make_failed_load_tests(name, exception, suiteClass):
@@ -219,7 +220,7 @@ class TestLoader(object):
         if os.path.isdir(os.path.abspath(start_dir)):
             start_dir = os.path.abspath(start_dir)
             if start_dir != top_level_dir:
-                is_not_importable = not os.path.isfile(os.path.join(start_dir, '__init__.py'))
+                is_not_importable = not (os.path.isfile(os.path.join(start_dir, '__init__.py')) or os.path.isfile(os.path.join(start_dir, '__init__.mpy')))  ###
         else:
             # support for discovery from dotted module names
             try:
@@ -233,31 +234,6 @@ class TestLoader(object):
                     start_dir = os.path.abspath(
                        os.path.dirname((the_module.__file__)))
                 except AttributeError:
-                    # look for namespace packages
-                    try:
-                        spec = the_module.__spec__
-                    except AttributeError:
-                        spec = None
-
-                    if spec and spec.loader is None:
-                        if spec.submodule_search_locations is not None:
-                            is_namespace = True
-
-                            for path in the_module.__path__:
-                                if (not set_implicit_top and
-                                    not path.startswith(top_level_dir)):
-                                    continue
-                                self._top_level_dir = \
-                                    (path.split(the_module.__name__
-                                         .replace(".", os.path.sep))[0])
-                                tests.extend(self._find_tests(path,
-                                                              pattern,
-                                                              namespace=True))
-                    elif the_module.__name__ in sys.builtin_module_names:
-                        # builtin module
-                        raise TypeError('Can not use builtin modules '
-                                        'as dotted module names') from None
-                    else:
                         raise TypeError(
                             'don\'t know how to discover from {!r}'
                             .format(the_module)) from None
