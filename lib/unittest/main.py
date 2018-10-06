@@ -9,6 +9,7 @@ import time                                                                     
 
 from . import loader, runner
 #from .signals import installHandler
+from . import mp_function_attributes                                            ###
 
 __unittest = True
 
@@ -245,6 +246,7 @@ class TestProgram(object):
                                                                                 ###
     def cleanup(self):                                                          ###
         self.result = None                                                      ###
+        mp_function_attributes.func_clearattrs()                                ###
         for mod in sys.modules:                                                 ###
             if mod not in self.saved_modules:                                   ###
                 if self.verbosity > 2:                                          ###
@@ -276,7 +278,8 @@ class TestProgram(object):
                                                                                 ###
         for path in sorted(os.listdir(self.start)):                             ###
             if not fnmatch(path, self.pattern):                                 ###
-                print('SKIPPED', path)                                          ###
+                if self.verbosity > 2:                                          ###
+                    self.testRunner.stream.write('SKIPPED {}\n'.format(path))   ###
                 continue                                                        ###
                                                                                 ###
             heading = '\n\n'                                                    ###
