@@ -188,6 +188,8 @@ class TestProgram(object):
             expectedFails += len(self.result.expectedFailures)                  ###
             unexpectedSuccesses += len(self.result.unexpectedSuccesses)         ###
             self.cleanup()                                                      ###
+            self.testRunner = None                                              ###
+            self.get_testRunner()                                               ###
                                                                                 ###
         t_end = time.monotonic() - t_start                                      ###
         msg = '\n'                                                              ###

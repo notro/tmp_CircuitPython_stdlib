@@ -131,7 +131,7 @@
  
      def createTests(self):
          if self.testNames is None:
-@@ -145,88 +121,110 @@
+@@ -145,88 +121,112 @@
              self.test = self.testLoader.loadTestsFromNames(self.testNames,
                                                             self.module)
  
@@ -267,6 +267,8 @@
 +            expectedFails += len(self.result.expectedFailures)                  ###
 +            unexpectedSuccesses += len(self.result.unexpectedSuccesses)         ###
 +            self.cleanup()                                                      ###
++            self.testRunner = None                                              ###
++            self.get_testRunner()                                               ###
 +                                                                                ###
 +        t_end = time.monotonic() - t_start                                      ###
 +        msg = '\n'                                                              ###
@@ -321,7 +323,7 @@
          if self.testRunner is None:
              self.testRunner = runner.TextTestRunner
          if isinstance(self.testRunner, type):
-@@ -238,11 +236,17 @@
+@@ -238,11 +238,17 @@
              except TypeError:
                  # didn't accept the verbosity, buffer or failfast arguments
                  testRunner = self.testRunner()
