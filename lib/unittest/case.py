@@ -854,7 +854,8 @@ class TestCase(object):
                                                         safe_repr(delta))
         else:
             if places is None:
-                places = 7
+#                places = 7
+                places = 5                                                      ###
 
 #            if round(abs(second-first), places) == 0:
 #                return
@@ -894,7 +895,8 @@ class TestCase(object):
                                                         safe_repr(delta))
         else:
             if places is None:
-                places = 7
+#                places = 7
+                places = 5                                                      ###
 #            if not (first == second) and round(abs(second-first), places) != 0:
 #                return
             # !MICROPY_PY_BUILTINS_ROUND_INT                                    ###
