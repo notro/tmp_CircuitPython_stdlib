@@ -22,11 +22,11 @@ import shutil
 #import stat
 #import struct
 #import subprocess
-#import sys
+import sys
 #import sysconfig
 #import tempfile
 #import time
-#import unittest
+import unittest
 #import urllib.error
 #import warnings
 #
@@ -150,8 +150,8 @@ def import_module(name, deprecated=False, *, required_on=()):
 #            return importlib.import_module(name)
             return __import__(name)                                             ###
         except ImportError as msg:
-            if sys.platform.startswith(tuple(required_on)):
-                raise
+#            if sys.platform.startswith(tuple(required_on)):
+#                raise
             raise unittest.SkipTest(str(msg))
 
 
