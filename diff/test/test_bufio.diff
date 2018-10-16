@@ -1,0 +1,38 @@
+--- <CPython-3.4.9>/test/test_bufio.py
++++ lib/test/test_bufio.py
+@@ -2,14 +2,12 @@
+ from test import support
+ 
+ import io # C implementation.
+-import _pyio as pyio # Python implementation.
+ 
+ # Simple test to ensure that optimizations in the IO library deliver the
+ # expected results.  For best testing, run this under a debug-build Python too
+ # (to exercise asserts in the C code).
+ 
+-lengths = list(range(1, 257)) + [512, 1000, 1024, 2048, 4096, 8192, 10000,
+-                                 16384, 32768, 65536, 1000000]
++lengths = list(range(1, 20, 3)) + [63, 64, 128, 256]                            ### Writing files to flash is sloooow
+ 
+ class BufferSizeTest:
+     def try_one(self, s):
+@@ -21,7 +19,7 @@
+ 
+         # Since C doesn't guarantee we can write/read arbitrary bytes in text
+         # files, use binary mode.
+-        f = self.open(support.TESTFN, "wb")
++        f = io.open(support.TESTFN, "wb")                                       ### self.open is turned into a bound method
+         try:
+             # write once with \n and once without
+             f.write(s)
+@@ -65,9 +63,4 @@
+ class CBufferSizeTest(BufferSizeTest, unittest.TestCase):
+     open = io.open
+ 
+-class PyBufferSizeTest(BufferSizeTest, unittest.TestCase):
+-    open = staticmethod(pyio.open)
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
++

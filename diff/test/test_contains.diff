@@ -1,0 +1,29 @@
+--- <CPython-3.4.9>/test/test_contains.py
++++ lib/test/test_contains.py
+@@ -1,5 +1,3 @@
+-from collections import deque
+-from test.support import run_unittest
+ import unittest
+ 
+ 
+@@ -76,8 +74,8 @@
+             def __hash__(self):
+                 return 28
+ 
+-        values = float('nan'), 1, None, 'abc', MyNonReflexive()
+-        constructors = list, tuple, dict.fromkeys, set, frozenset, deque
++        values = 1, None, 'abc', MyNonReflexive()                               ###
++        constructors = list, tuple, dict.fromkeys, set, frozenset               ###
+         for constructor in constructors:
+             container = constructor(values)
+             for elem in container:
+@@ -86,8 +84,4 @@
+             self.assertTrue(container == container)
+ 
+ 
+-def test_main():
+-    run_unittest(TestContains)
+-
+-if __name__ == '__main__':
+-    test_main()
++

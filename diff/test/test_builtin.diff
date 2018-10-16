@@ -1,0 +1,1026 @@
+--- <CPython-3.4.9>/test/test_builtin.py
++++ lib/test/test_builtin.py
+@@ -1,13 +1,9 @@
+ # Python test set -- built-in functions
+ 
+-import ast
+ import builtins
+ import collections
+ import io
+-import locale
+ import os
+-import pickle
+-import platform
+ import random
+ import sys
+ import traceback
+@@ -15,12 +11,7 @@
+ import unittest
+ import warnings
+ from operator import neg
+-from test.support import TESTFN, unlink,  run_unittest, check_warnings
+-from test.script_helper import assert_python_ok
+-try:
+-    import pty, signal
+-except ImportError:
+-    pty = signal = None
++from test.support import TESTFN, unlink                                         ###
+ 
+ 
+ class Squares:
+@@ -141,12 +132,8 @@
+     def test_import(self):
+         __import__('sys')
+         __import__('time')
+-        __import__('string')
+-        __import__(name='sys')
+-        __import__(name='time', level=0)
+         self.assertRaises(ImportError, __import__, 'spamspam')
+         self.assertRaises(TypeError, __import__, 1, 2, 3, 4)
+-        self.assertRaises(ValueError, __import__, '')
+         self.assertRaises(TypeError, __import__, 'sys', name='sys')
+ 
+     def test_abs(self):
+@@ -202,41 +189,6 @@
+         S = [10, 20, 30]
+         self.assertEqual(any(x > 42 for x in S), False)
+ 
+-    def test_ascii(self):
+-        self.assertEqual(ascii(''), '\'\'')
+-        self.assertEqual(ascii(0), '0')
+-        self.assertEqual(ascii(()), '()')
+-        self.assertEqual(ascii([]), '[]')
+-        self.assertEqual(ascii({}), '{}')
+-        a = []
+-        a.append(a)
+-        self.assertEqual(ascii(a), '[[...]]')
+-        a = {}
+-        a[0] = a
+-        self.assertEqual(ascii(a), '{0: {...}}')
+-        # Advanced checks for unicode strings
+-        def _check_uni(s):
+-            self.assertEqual(ascii(s), repr(s))
+-        _check_uni("'")
+-        _check_uni('"')
+-        _check_uni('"\'')
+-        _check_uni('\0')
+-        _check_uni('\r\n\t .')
+-        # Unprintable non-ASCII characters
+-        _check_uni('\x85')
+-        _check_uni('\u1fff')
+-        _check_uni('\U00012fff')
+-        # Lone surrogates
+-        _check_uni('\ud800')
+-        _check_uni('\udfff')
+-        # Issue #9804: surrogates should be joined even for printable
+-        # wide characters (UCS-2 builds).
+-        self.assertEqual(ascii('\U0001d121'), "'\\U0001d121'")
+-        # All together
+-        s = "'\0\"\n\r\t abcd\x85é\U00012fff\uD800\U0001D121xxx."
+-        self.assertEqual(ascii(s),
+-            r"""'\'\x00"\n\r\t abcd\x85\xe9\U00012fff\ud800\U0001d121xxx.'""")
+-
+     def test_neg(self):
+         x = -sys.maxsize-1
+         self.assertTrue(isinstance(x, int))
+@@ -247,7 +199,6 @@
+         self.assertFalse(callable("a"))
+         self.assertTrue(callable(callable))
+         self.assertTrue(callable(lambda x, y: x + y))
+-        self.assertFalse(callable(__builtins__))
+         def f(): pass
+         self.assertTrue(callable(f))
+ 
+@@ -282,8 +233,6 @@
+         self.assertEqual(chr(97), 'a')
+         self.assertEqual(chr(0xff), '\xff')
+         self.assertRaises(ValueError, chr, 1<<24)
+-        self.assertEqual(chr(sys.maxunicode),
+-                         str('\\U0010ffff'.encode("ascii"), 'unicode-escape'))
+         self.assertRaises(TypeError, chr)
+         self.assertEqual(chr(0x0000FFFF), "\U0000FFFF")
+         self.assertEqual(chr(0x00010000), "\U00010000")
+@@ -301,73 +250,15 @@
+     def test_cmp(self):
+         self.assertTrue(not hasattr(builtins, "cmp"))
+ 
+-    def test_compile(self):
+-        compile('print(1)\n', '', 'exec')
+-        bom = b'\xef\xbb\xbf'
+-        compile(bom + b'print(1)\n', '', 'exec')
+-        compile(source='pass', filename='?', mode='exec')
+-        compile(dont_inherit=0, filename='tmp', source='0', mode='eval')
+-        compile('pass', '?', dont_inherit=1, mode='exec')
+-        compile(memoryview(b"text"), "name", "exec")
+-        self.assertRaises(TypeError, compile)
+-        self.assertRaises(ValueError, compile, 'print(42)\n', '<string>', 'badmode')
+-        self.assertRaises(ValueError, compile, 'print(42)\n', '<string>', 'single', 0xff)
+-        self.assertRaises(TypeError, compile, chr(0), 'f', 'exec')
+-        self.assertRaises(TypeError, compile, 'pass', '?', 'exec',
+-                          mode='eval', source='0', filename='tmp')
+-        compile('print("\xe5")\n', '', 'exec')
+-        self.assertRaises(TypeError, compile, chr(0), 'f', 'exec')
+-        self.assertRaises(ValueError, compile, str('a = 1'), 'f', 'bad')
+-
+-        # test the optimize argument
+-
+-        codestr = '''def f():
+-        """doc"""
+-        try:
+-            assert False
+-        except AssertionError:
+-            return (True, f.__doc__)
+-        else:
+-            return (False, f.__doc__)
+-        '''
+-        def f(): """doc"""
+-        values = [(-1, __debug__, f.__doc__),
+-                  (0, True, 'doc'),
+-                  (1, False, 'doc'),
+-                  (2, False, None)]
+-        for optval, debugval, docstring in values:
+-            # test both direct compilation and compilation via AST
+-            codeobjs = []
+-            codeobjs.append(compile(codestr, "<test>", "exec", optimize=optval))
+-            tree = ast.parse(codestr)
+-            codeobjs.append(compile(tree, "<test>", "exec", optimize=optval))
+-            for code in codeobjs:
+-                ns = {}
+-                exec(code, ns)
+-                rv = ns['f']()
+-                self.assertEqual(rv, (debugval, docstring))
+-
+     def test_delattr(self):
+-        sys.spam = 1
+-        delattr(sys, 'spam')
+         self.assertRaises(TypeError, delattr)
+ 
+     def test_dir(self):
+         # dir(wrong number of arguments)
+         self.assertRaises(TypeError, dir, 42, 42)
+ 
+-        # dir() - local scope
+-        local_var = 1
+-        self.assertIn('local_var', dir())
+-
+         # dir(module)
+         self.assertIn('exit', dir(sys))
+-
+-        # dir(module_with_invalid__dict__)
+-        class Foo(types.ModuleType):
+-            __dict__ = 8
+-        f = Foo("foo")
+-        self.assertRaises(TypeError, dir, f)
+ 
+         # dir(type)
+         self.assertIn("strip", dir(str))
+@@ -381,12 +272,6 @@
+                 self.z = 9
+         f = Foo()
+         self.assertIn("y", dir(f))
+-
+-        # dir(obj_no__dict__)
+-        class Foo(object):
+-            __slots__ = []
+-        f = Foo()
+-        self.assertIn("__repr__", dir(f))
+ 
+         # dir(obj_no__class__with__dict__)
+         # (an ugly trick to cause getattr(f, "__class__") to fail)
+@@ -398,37 +283,6 @@
+         self.assertNotIn("__repr__", dir(f))
+         self.assertIn("bar", dir(f))
+ 
+-        # dir(obj_using __dir__)
+-        class Foo(object):
+-            def __dir__(self):
+-                return ["kan", "ga", "roo"]
+-        f = Foo()
+-        self.assertTrue(dir(f) == ["ga", "kan", "roo"])
+-
+-        # dir(obj__dir__tuple)
+-        class Foo(object):
+-            def __dir__(self):
+-                return ("b", "c", "a")
+-        res = dir(Foo())
+-        self.assertIsInstance(res, list)
+-        self.assertTrue(res == ["a", "b", "c"])
+-
+-        # dir(obj__dir__not_sequence)
+-        class Foo(object):
+-            def __dir__(self):
+-                return 7
+-        f = Foo()
+-        self.assertRaises(TypeError, dir, f)
+-
+-        # dir(traceback)
+-        try:
+-            raise IndexError
+-        except:
+-            self.assertEqual(len(dir(sys.exc_info()[2])), 4)
+-
+-        # test that object has a __dir__()
+-        self.assertEqual(sorted([].__dir__()), dir([]))
+-
+     def test_divmod(self):
+         self.assertEqual(divmod(12, 7), (1, 5))
+         self.assertEqual(divmod(-12, 7), (-2, 2))
+@@ -449,7 +303,6 @@
+ 
+     def test_eval(self):
+         self.assertEqual(eval('1+1'), 2)
+-        self.assertEqual(eval(' 1+1\n'), 2)
+         globals = {'a': 1, 'b': 2}
+         locals = {'b': 200, 'c': 300}
+         self.assertEqual(eval('a', globals) , 1)
+@@ -458,17 +311,9 @@
+         self.assertEqual(eval('c', globals, locals), 300)
+         globals = {'a': 1, 'b': 2}
+         locals = {'b': 200, 'c': 300}
+-        bom = b'\xef\xbb\xbf'
+-        self.assertEqual(eval(bom + b'a', globals, locals), 1)
+         self.assertEqual(eval('"\xe5"', globals), "\xe5")
+         self.assertRaises(TypeError, eval)
+         self.assertRaises(TypeError, eval, ())
+-        self.assertRaises(SyntaxError, eval, bom[:2] + b'a')
+-
+-        class X:
+-            def __getitem__(self, key):
+-                raise ValueError
+-        self.assertRaises(ValueError, eval, "foo", {}, X())
+ 
+     def test_general_eval(self):
+         # Tests that general mappings can be used for the locals argument
+@@ -484,51 +329,12 @@
+ 
+         m = M()
+         g = globals()
+-        self.assertEqual(eval('a', g, m), 12)
+-        self.assertRaises(NameError, eval, 'b', g, m)
+-        self.assertEqual(eval('dir()', g, m), list('xyz'))
+-        self.assertEqual(eval('globals()', g, m), g)
+-        self.assertEqual(eval('locals()', g, m), m)
+         self.assertRaises(TypeError, eval, 'a', m)
+         class A:
+             "Non-mapping"
+             pass
+         m = A()
+         self.assertRaises(TypeError, eval, 'a', g, m)
+-
+-        # Verify that dict subclasses work as well
+-        class D(dict):
+-            def __getitem__(self, key):
+-                if key == 'a':
+-                    return 12
+-                return dict.__getitem__(self, key)
+-            def keys(self):
+-                return list('xyz')
+-
+-        d = D()
+-        self.assertEqual(eval('a', g, d), 12)
+-        self.assertRaises(NameError, eval, 'b', g, d)
+-        self.assertEqual(eval('dir()', g, d), list('xyz'))
+-        self.assertEqual(eval('globals()', g, d), g)
+-        self.assertEqual(eval('locals()', g, d), d)
+-
+-        # Verify locals stores (used by list comps)
+-        eval('[locals() for i in (2,3)]', g, d)
+-        eval('[locals() for i in (2,3)]', g, collections.UserDict())
+-
+-        class SpreadSheet:
+-            "Sample application showing nested, calculated lookups."
+-            _cells = {}
+-            def __setitem__(self, key, formula):
+-                self._cells[key] = formula
+-            def __getitem__(self, key):
+-                return eval(self._cells[key], globals(), self)
+-
+-        ss = SpreadSheet()
+-        ss['a1'] = '5'
+-        ss['a2'] = 'a1*6'
+-        ss['a3'] = 'a2*7'
+-        self.assertEqual(ss['a3'], 210)
+ 
+         # Verify that dir() catches a non-list returned by eval
+         # SF bug #1004669
+@@ -553,62 +359,13 @@
+         g = {}
+         l = {}
+ 
+-        with check_warnings():
+-            warnings.filterwarnings("ignore", "global statement",
+-                    module="<string>")
++        if True:                                                                ###
+             exec('global a; a = 1; b = 2', g, l)
+         if '__builtins__' in g:
+             del g['__builtins__']
+         if '__builtins__' in l:
+             del l['__builtins__']
+         self.assertEqual((g, l), ({'a': 1}, {'b': 2}))
+-
+-    def test_exec_globals(self):
+-        code = compile("print('Hello World!')", "", "exec")
+-        # no builtin function
+-        self.assertRaisesRegex(NameError, "name 'print' is not defined",
+-                               exec, code, {'__builtins__': {}})
+-        # __builtins__ must be a mapping type
+-        self.assertRaises(TypeError,
+-                          exec, code, {'__builtins__': 123})
+-
+-        # no __build_class__ function
+-        code = compile("class A: pass", "", "exec")
+-        self.assertRaisesRegex(NameError, "__build_class__ not found",
+-                               exec, code, {'__builtins__': {}})
+-
+-        class frozendict_error(Exception):
+-            pass
+-
+-        class frozendict(dict):
+-            def __setitem__(self, key, value):
+-                raise frozendict_error("frozendict is readonly")
+-
+-        # read-only builtins
+-        if isinstance(__builtins__, types.ModuleType):
+-            frozen_builtins = frozendict(__builtins__.__dict__)
+-        else:
+-            frozen_builtins = frozendict(__builtins__)
+-        code = compile("__builtins__['superglobal']=2; print(superglobal)", "test", "exec")
+-        self.assertRaises(frozendict_error,
+-                          exec, code, {'__builtins__': frozen_builtins})
+-
+-        # read-only globals
+-        namespace = frozendict({})
+-        code = compile("x=1", "test", "exec")
+-        self.assertRaises(frozendict_error,
+-                          exec, code, namespace)
+-
+-    def test_exec_redirected(self):
+-        savestdout = sys.stdout
+-        sys.stdout = None # Whatever that cannot flush()
+-        try:
+-            # Used to raise SystemError('error return without exception set')
+-            exec('a')
+-        except NameError:
+-            pass
+-        finally:
+-            sys.stdout = savestdout
+ 
+     def test_filter(self):
+         self.assertEqual(list(filter(lambda c: 'a' <= c <= 'z', 'Hello World')), list('elloorld'))
+@@ -635,18 +392,11 @@
+         self.assertEqual(list(filter(lambda x: x>=3, (1, 2, 3, 4))), [3, 4])
+         self.assertRaises(TypeError, list, filter(42, (1, 2)))
+ 
+-    def test_filter_pickle(self):
+-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+-            f1 = filter(filter_char, "abcdeabcde")
+-            f2 = filter(filter_char, "abcdeabcde")
+-            self.check_iter_pickle(f1, list(f2), proto)
+-
+     def test_getattr(self):
+         self.assertTrue(getattr(sys, 'stdout') is sys.stdout)
+         self.assertRaises(TypeError, getattr, sys, 1)
+         self.assertRaises(TypeError, getattr, sys, 1, "foo")
+         self.assertRaises(TypeError, getattr)
+-        self.assertRaises(AttributeError, getattr, sys, chr(sys.maxunicode))
+         # unicode surrogates are not encodable to the default encoding (utf8)
+         self.assertRaises(AttributeError, getattr, 1, "\uDAD1\uD51E")
+ 
+@@ -654,7 +404,6 @@
+         self.assertTrue(hasattr(sys, 'stdout'))
+         self.assertRaises(TypeError, hasattr, sys, 1)
+         self.assertRaises(TypeError, hasattr)
+-        self.assertEqual(False, hasattr(sys, chr(sys.maxunicode)))
+ 
+         # Check that hasattr propagates all exceptions outside of
+         # AttributeError.
+@@ -682,10 +431,6 @@
+             def __hash__(self):
+                 return 2**100
+         self.assertEqual(type(hash(X())), int)
+-        class Z(int):
+-            def __hash__(self):
+-                return self
+-        self.assertEqual(hash(Z(42)), hash(42))
+ 
+     def test_hex(self):
+         self.assertEqual(hex(16), '0x10')
+@@ -759,18 +504,6 @@
+             def __len__(self):
+                 raise ValueError
+         self.assertRaises(ValueError, len, BadSeq())
+-        class InvalidLen:
+-            def __len__(self):
+-                return None
+-        self.assertRaises(TypeError, len, InvalidLen())
+-        class FloatLen:
+-            def __len__(self):
+-                return 4.5
+-        self.assertRaises(TypeError, len, FloatLen())
+-        class HugeLen:
+-            def __len__(self):
+-                return sys.maxsize + 1
+-        self.assertRaises(OverflowError, len, HugeLen())
+         class NoLenMethod(object): pass
+         self.assertRaises(TypeError, len, NoLenMethod())
+ 
+@@ -834,12 +567,6 @@
+             raise RuntimeError
+         self.assertRaises(RuntimeError, list, map(badfunc, range(5)))
+ 
+-    def test_map_pickle(self):
+-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+-            m1 = map(map_char, "Is this the real life?")
+-            m2 = map(map_char, "Is this the real life?")
+-            self.check_iter_pickle(m1, list(m2), proto)
+-
+     def test_max(self):
+         self.assertEqual(max('123123'), '3')
+         self.assertEqual(max(1, 2, 3), 3)
+@@ -861,11 +588,8 @@
+         for stmt in (
+             "max(key=int)",                 # no args
+             "max(default=None)",
+-            "max(1, 2, default=None)",      # require container for default
+             "max(default=None, key=int)",
+             "max(1, key=int)",              # single arg not iterable
+-            "max(1, 2, keystone=int)",      # wrong keyword
+-            "max(1, 2, key=int, abc=int)",  # two many keywords
+             "max(1, 2, key=1)",             # keyfunc is not callable
+             ):
+             try:
+@@ -886,12 +610,6 @@
+         self.assertEqual(max((), default=1, key=neg), 1)
+         self.assertEqual(max((1, 2), default=3, key=neg), 1)
+ 
+-        data = [random.randrange(200) for i in range(100)]
+-        keys = dict((elem, random.randrange(50)) for elem in data)
+-        f = keys.__getitem__
+-        self.assertEqual(max(data, key=f),
+-                         sorted(reversed(data), key=f)[-1])
+-
+     def test_min(self):
+         self.assertEqual(min('123123'), '1')
+         self.assertEqual(min(1, 2, 3), 1)
+@@ -913,11 +631,8 @@
+         for stmt in (
+             "min(key=int)",                 # no args
+             "min(default=None)",
+-            "min(1, 2, default=None)",      # require container for default
+             "min(default=None, key=int)",
+             "min(1, key=int)",              # single arg not iterable
+-            "min(1, 2, keystone=int)",      # wrong keyword
+-            "min(1, 2, key=int, abc=int)",  # two many keywords
+             "min(1, 2, key=1)",             # keyfunc is not callable
+             ):
+             try:
+@@ -950,7 +665,6 @@
+         self.assertEqual(next(it), 1)
+         self.assertRaises(StopIteration, next, it)
+         self.assertRaises(StopIteration, next, it)
+-        self.assertEqual(next(it, 42), 42)
+ 
+         class Iter(object):
+             def __iter__(self):
+@@ -959,7 +673,6 @@
+                 raise StopIteration
+ 
+         it = iter(Iter())
+-        self.assertEqual(next(it, 42), 42)
+         self.assertRaises(StopIteration, next, it)
+ 
+         def gen():
+@@ -969,7 +682,6 @@
+         it = gen()
+         self.assertEqual(next(it), 1)
+         self.assertRaises(StopIteration, next, it)
+-        self.assertEqual(next(it, 42), 42)
+ 
+     def test_oct(self):
+         self.assertEqual(oct(100), '0o144')
+@@ -985,8 +697,8 @@
+             fp.write('The quick brown fox jumps over the lazy dog')
+             fp.write('.\n')
+             fp.write('Dear John\n')
+-            fp.write('XXX'*100)
+-            fp.write('YYY'*100)
++            fp.write('XXX'*10)                                                  ###
++            fp.write('YYY'*10)                                                  ###
+ 
+     def test_open(self):
+         self.write_testfile()
+@@ -996,32 +708,8 @@
+             self.assertEqual(fp.readline(), 'The quick brown fox jumps over the lazy dog.\n')
+             self.assertEqual(fp.readline(4), 'Dear')
+             self.assertEqual(fp.readline(100), ' John\n')
+-            self.assertEqual(fp.read(300), 'XXX'*100)
+-            self.assertEqual(fp.read(1000), 'YYY'*100)
+-
+-    def test_open_default_encoding(self):
+-        old_environ = dict(os.environ)
+-        try:
+-            # try to get a user preferred encoding different than the current
+-            # locale encoding to check that open() uses the current locale
+-            # encoding and not the user preferred encoding
+-            for key in ('LC_ALL', 'LANG', 'LC_CTYPE'):
+-                if key in os.environ:
+-                    del os.environ[key]
+-
+-            self.write_testfile()
+-            current_locale_encoding = locale.getpreferredencoding(False)
+-            fp = open(TESTFN, 'w')
+-            with fp:
+-                self.assertEqual(fp.encoding, current_locale_encoding)
+-        finally:
+-            os.environ.clear()
+-            os.environ.update(old_environ)
+-
+-    def test_open_non_inheritable(self):
+-        fileobj = open(__file__)
+-        with fileobj:
+-            self.assertFalse(os.get_inheritable(fileobj.fileno()))
++            self.assertEqual(fp.read(30), 'XXX'*10)                             ###
++            self.assertEqual(fp.read(100), 'YYY'*10)                            ###
+ 
+     def test_ord(self):
+         self.assertEqual(ord(' '), 32)
+@@ -1036,7 +724,6 @@
+         self.assertEqual(ord(b'\x80'), 128)
+         self.assertEqual(ord(b'\xff'), 255)
+ 
+-        self.assertEqual(ord(chr(sys.maxunicode)), sys.maxunicode)
+         self.assertRaises(TypeError, ord, 42)
+ 
+         self.assertEqual(ord(chr(0x10FFFF)), 0x10FFFF)
+@@ -1081,58 +768,10 @@
+         self.assertAlmostEqual(pow(-2.,2), 4.)
+         self.assertAlmostEqual(pow(-2.,3), -8.)
+ 
+-        for x in 2, 2.0:
+-            for y in 10, 10.0:
+-                for z in 1000, 1000.0:
+-                    if isinstance(x, float) or \
+-                       isinstance(y, float) or \
+-                       isinstance(z, float):
+-                        self.assertRaises(TypeError, pow, x, y, z)
+-                    else:
+-                        self.assertAlmostEqual(pow(x, y, z), 24.0)
+-
+         self.assertAlmostEqual(pow(-1, 0.5), 1j)
+         self.assertAlmostEqual(pow(-1, 1/3), 0.5 + 0.8660254037844386j)
+ 
+-        self.assertRaises(TypeError, pow, -1, -2, 3)
+-        self.assertRaises(ValueError, pow, 1, 2, 0)
+-
+         self.assertRaises(TypeError, pow)
+-
+-    def test_input(self):
+-        self.write_testfile()
+-        fp = open(TESTFN, 'r')
+-        savestdin = sys.stdin
+-        savestdout = sys.stdout # Eats the echo
+-        try:
+-            sys.stdin = fp
+-            sys.stdout = BitBucket()
+-            self.assertEqual(input(), "1+1")
+-            self.assertEqual(input(), 'The quick brown fox jumps over the lazy dog.')
+-            self.assertEqual(input('testing\n'), 'Dear John')
+-
+-            # SF 1535165: don't segfault on closed stdin
+-            # sys.stdout must be a regular file for triggering
+-            sys.stdout = savestdout
+-            sys.stdin.close()
+-            self.assertRaises(ValueError, input)
+-
+-            sys.stdout = BitBucket()
+-            sys.stdin = io.StringIO("NULL\0")
+-            self.assertRaises(TypeError, input, 42, 42)
+-            sys.stdin = io.StringIO("    'whitespace'")
+-            self.assertEqual(input(), "    'whitespace'")
+-            sys.stdin = io.StringIO()
+-            self.assertRaises(EOFError, input)
+-
+-            del sys.stdout
+-            self.assertRaises(RuntimeError, input, 'prompt')
+-            del sys.stdin
+-            self.assertRaises(RuntimeError, input, 'prompt')
+-        finally:
+-            sys.stdin = savestdin
+-            sys.stdout = savestdout
+-            fp.close()
+ 
+     # test_int(): see test_int.py for tests of built-in function int().
+ 
+@@ -1142,12 +781,6 @@
+         self.assertEqual(repr(()), '()')
+         self.assertEqual(repr([]), '[]')
+         self.assertEqual(repr({}), '{}')
+-        a = []
+-        a.append(a)
+-        self.assertEqual(repr(a), '[[...]]')
+-        a = {}
+-        a[0] = a
+-        self.assertEqual(repr(a), '{0: {...}}')
+ 
+     def test_round(self):
+         self.assertEqual(round(0.0), 0.0)
+@@ -1196,24 +829,13 @@
+         self.assertEqual(round(8), 8)
+         self.assertEqual(round(-8), -8)
+         self.assertEqual(type(round(0)), int)
+-        self.assertEqual(type(round(-8, -1)), int)
+-        self.assertEqual(type(round(-8, 0)), int)
+-        self.assertEqual(type(round(-8, 1)), int)
+-
+-        # test new kwargs
+-        self.assertEqual(round(number=-8.0, ndigits=-1), -10.0)
+ 
+         self.assertRaises(TypeError, round)
+ 
+         # test generic rounding delegation for reals
+-        class TestRound:
+-            def __round__(self):
+-                return 23
+-
+         class TestNoRound:
+             pass
+ 
+-        self.assertEqual(round(TestRound()), 23)
+ 
+         self.assertRaises(TypeError, round, 1, 2, 3)
+         self.assertRaises(TypeError, round, TestNoRound())
+@@ -1223,19 +845,6 @@
+         self.assertRaises(TypeError, round, t)
+         self.assertRaises(TypeError, round, t, 0)
+ 
+-    # Some versions of glibc for alpha have a bug that affects
+-    # float -> integer rounding (floor, ceil, rint, round) for
+-    # values in the range [2**52, 2**53).  See:
+-    #
+-    #   http://sources.redhat.com/bugzilla/show_bug.cgi?id=5350
+-    #
+-    # We skip this test on Linux/alpha if it would fail.
+-    linux_alpha = (platform.system().startswith('Linux') and
+-                   platform.machine().startswith('alpha'))
+-    system_round_bug = round(5e15+1) != 5e15+1
+-    @unittest.skipIf(linux_alpha and system_round_bug,
+-                     "test will fail;  failure is probably due to a "
+-                     "buggy system round function")
+     def test_round_large(self):
+         # Issue #1869: integral floats should remain unchanged
+         self.assertEqual(round(5e15-1), 5e15-1)
+@@ -1245,8 +854,6 @@
+         self.assertEqual(round(5e15+3), 5e15+3)
+ 
+     def test_setattr(self):
+-        setattr(sys, 'spam', 1)
+-        self.assertEqual(sys.spam, 1)
+         self.assertRaises(TypeError, setattr, sys, 1, 'spam')
+         self.assertRaises(TypeError, setattr)
+ 
+@@ -1263,10 +870,6 @@
+         self.assertRaises(TypeError, sum)
+         self.assertRaises(TypeError, sum, 42)
+         self.assertRaises(TypeError, sum, ['a', 'b', 'c'])
+-        self.assertRaises(TypeError, sum, ['a', 'b', 'c'], '')
+-        self.assertRaises(TypeError, sum, [b'a', b'c'], b'')
+-        values = [bytearray(b'a'), bytearray(b'b')]
+-        self.assertRaises(TypeError, sum, values, bytearray(b''))
+         self.assertRaises(TypeError, sum, [[1], [2], [3]])
+         self.assertRaises(TypeError, sum, [{2:3}])
+         self.assertRaises(TypeError, sum, [{2:3}]*2, {2:3})
+@@ -1296,20 +899,6 @@
+         a = 1
+         b = 2
+         return vars()
+-
+-    class C_get_vars(object):
+-        def getDict(self):
+-            return {'a':2}
+-        __dict__ = property(fget=getDict)
+-
+-    def test_vars(self):
+-        self.assertEqual(set(vars()), set(dir()))
+-        self.assertEqual(set(vars(sys)), set(dir(sys)))
+-        self.assertEqual(self.get_vars_f0(), {})
+-        self.assertEqual(self.get_vars_f2(), {'a': 1, 'b': 2})
+-        self.assertRaises(TypeError, vars, 42, 42)
+-        self.assertRaises(TypeError, vars, 42)
+-        self.assertEqual(vars(self.C_get_vars()), {'a':2})
+ 
+     def test_zip(self):
+         a = (1, 2, 3)
+@@ -1355,118 +944,6 @@
+                     return i
+         self.assertRaises(ValueError, list, zip(BadSeq(), BadSeq()))
+ 
+-    def test_zip_pickle(self):
+-        a = (1, 2, 3)
+-        b = (4, 5, 6)
+-        t = [(1, 4), (2, 5), (3, 6)]
+-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+-            z1 = zip(a, b)
+-            self.check_iter_pickle(z1, t, proto)
+-
+-    def test_format(self):
+-        # Test the basic machinery of the format() builtin.  Don't test
+-        #  the specifics of the various formatters
+-        self.assertEqual(format(3, ''), '3')
+-
+-        # Returns some classes to use for various tests.  There's
+-        #  an old-style version, and a new-style version
+-        def classes_new():
+-            class A(object):
+-                def __init__(self, x):
+-                    self.x = x
+-                def __format__(self, format_spec):
+-                    return str(self.x) + format_spec
+-            class DerivedFromA(A):
+-                pass
+-
+-            class Simple(object): pass
+-            class DerivedFromSimple(Simple):
+-                def __init__(self, x):
+-                    self.x = x
+-                def __format__(self, format_spec):
+-                    return str(self.x) + format_spec
+-            class DerivedFromSimple2(DerivedFromSimple): pass
+-            return A, DerivedFromA, DerivedFromSimple, DerivedFromSimple2
+-
+-        def class_test(A, DerivedFromA, DerivedFromSimple, DerivedFromSimple2):
+-            self.assertEqual(format(A(3), 'spec'), '3spec')
+-            self.assertEqual(format(DerivedFromA(4), 'spec'), '4spec')
+-            self.assertEqual(format(DerivedFromSimple(5), 'abc'), '5abc')
+-            self.assertEqual(format(DerivedFromSimple2(10), 'abcdef'),
+-                             '10abcdef')
+-
+-        class_test(*classes_new())
+-
+-        def empty_format_spec(value):
+-            # test that:
+-            #  format(x, '') == str(x)
+-            #  format(x) == str(x)
+-            self.assertEqual(format(value, ""), str(value))
+-            self.assertEqual(format(value), str(value))
+-
+-        # for builtin types, format(x, "") == str(x)
+-        empty_format_spec(17**13)
+-        empty_format_spec(1.0)
+-        empty_format_spec(3.1415e104)
+-        empty_format_spec(-3.1415e104)
+-        empty_format_spec(3.1415e-104)
+-        empty_format_spec(-3.1415e-104)
+-        empty_format_spec(object)
+-        empty_format_spec(None)
+-
+-        # TypeError because self.__format__ returns the wrong type
+-        class BadFormatResult:
+-            def __format__(self, format_spec):
+-                return 1.0
+-        self.assertRaises(TypeError, format, BadFormatResult(), "")
+-
+-        # TypeError because format_spec is not unicode or str
+-        self.assertRaises(TypeError, format, object(), 4)
+-        self.assertRaises(TypeError, format, object(), object())
+-
+-        # tests for object.__format__ really belong elsewhere, but
+-        #  there's no good place to put them
+-        x = object().__format__('')
+-        self.assertTrue(x.startswith('<object object at'))
+-
+-        # first argument to object.__format__ must be string
+-        self.assertRaises(TypeError, object().__format__, 3)
+-        self.assertRaises(TypeError, object().__format__, object())
+-        self.assertRaises(TypeError, object().__format__, None)
+-
+-        # --------------------------------------------------------------------
+-        # Issue #7994: object.__format__ with a non-empty format string is
+-        #  deprecated
+-        def test_deprecated_format_string(obj, fmt_str, should_raise):
+-            if should_raise:
+-                self.assertRaises(TypeError, format, obj, fmt_str)
+-            else:
+-                format(obj, fmt_str)
+-
+-        fmt_strs = ['', 's']
+-
+-        class A:
+-            def __format__(self, fmt_str):
+-                return format('', fmt_str)
+-
+-        for fmt_str in fmt_strs:
+-            test_deprecated_format_string(A(), fmt_str, False)
+-
+-        class B:
+-            pass
+-
+-        class C(object):
+-            pass
+-
+-        for cls in [object, B, C]:
+-            for fmt_str in fmt_strs:
+-                test_deprecated_format_string(cls(), fmt_str, len(fmt_str) != 0)
+-        # --------------------------------------------------------------------
+-
+-        # make sure we can take a subclass of str as a format spec
+-        class DerivedFromStr(str): pass
+-        self.assertEqual(format(0, DerivedFromStr('10')), '         0')
+-
+     def test_bin(self):
+         self.assertEqual(bin(0), '0b0')
+         self.assertEqual(bin(1), '0b1')
+@@ -1476,145 +953,19 @@
+         self.assertEqual(bin(-(2**65)), '-0b1' + '0' * 65)
+         self.assertEqual(bin(-(2**65-1)), '-0b' + '1' * 65)
+ 
+-    def test_bytearray_translate(self):
+-        x = bytearray(b"abc")
+-        self.assertRaises(ValueError, x.translate, b"1", 1)
+-        self.assertRaises(TypeError, x.translate, b"1"*256, 1)
+-
+-    def test_construct_singletons(self):
+-        for const in None, Ellipsis, NotImplemented:
+-            tp = type(const)
+-            self.assertIs(tp(), const)
+-            self.assertRaises(TypeError, tp, 1, 2)
+-            self.assertRaises(TypeError, tp, a=1, b=2)
+-
+-@unittest.skipUnless(pty, "the pty and signal modules must be available")
+-class PtyTests(unittest.TestCase):
+-    """Tests that use a pseudo terminal to guarantee stdin and stdout are
+-    terminals in the test environment"""
+-
+-    def run_child(self, child, terminal_input):
+-        r, w = os.pipe()  # Pipe test results from child back to parent
+-        try:
+-            pid, fd = pty.fork()
+-        except (OSError, AttributeError) as e:
+-            os.close(r)
+-            os.close(w)
+-            self.skipTest("pty.fork() raised {}".format(e))
+-            raise
+-        if pid == 0:
+-            # Child
+-            try:
+-                # Make sure we don't get stuck if there's a problem
+-                signal.alarm(2)
+-                os.close(r)
+-                with open(w, "w") as wpipe:
+-                    child(wpipe)
+-            except:
+-                traceback.print_exc()
+-            finally:
+-                # We don't want to return to unittest...
+-                os._exit(0)
+-        # Parent
+-        os.close(w)
+-        os.write(fd, terminal_input)
+-        # Get results from the pipe
+-        with open(r, "r") as rpipe:
+-            lines = []
+-            while True:
+-                line = rpipe.readline().strip()
+-                if line == "":
+-                    # The other end was closed => the child exited
+-                    break
+-                lines.append(line)
+-        # Check the result was got and corresponds to the user's terminal input
+-        if len(lines) != 2:
+-            # Something went wrong, try to get at stderr
+-            # Beware of Linux raising EIO when the slave is closed
+-            child_output = bytearray()
+-            while True:
+-                try:
+-                    chunk = os.read(fd, 3000)
+-                except OSError:  # Assume EIO
+-                    break
+-                if not chunk:
+-                    break
+-                child_output.extend(chunk)
+-            os.close(fd)
+-            child_output = child_output.decode("ascii", "ignore")
+-            self.fail("got %d lines in pipe but expected 2, child output was:\n%s"
+-                      % (len(lines), child_output))
+-        os.close(fd)
+-        return lines
+-
+-    def check_input_tty(self, prompt, terminal_input, stdio_encoding=None):
+-        if not sys.stdin.isatty() or not sys.stdout.isatty():
+-            self.skipTest("stdin and stdout must be ttys")
+-        def child(wpipe):
+-            # Check the error handlers are accounted for
+-            if stdio_encoding:
+-                sys.stdin = io.TextIOWrapper(sys.stdin.detach(),
+-                                             encoding=stdio_encoding,
+-                                             errors='surrogateescape')
+-                sys.stdout = io.TextIOWrapper(sys.stdout.detach(),
+-                                              encoding=stdio_encoding,
+-                                              errors='replace')
+-            print("tty =", sys.stdin.isatty() and sys.stdout.isatty(), file=wpipe)
+-            print(ascii(input(prompt)), file=wpipe)
+-        lines = self.run_child(child, terminal_input + b"\r\n")
+-        # Check we did exercise the GNU readline path
+-        self.assertIn(lines[0], {'tty = True', 'tty = False'})
+-        if lines[0] != 'tty = True':
+-            self.skipTest("standard IO in should have been a tty")
+-        input_result = eval(lines[1])   # ascii() -> eval() roundtrip
+-        if stdio_encoding:
+-            expected = terminal_input.decode(stdio_encoding, 'surrogateescape')
+-        else:
+-            expected = terminal_input.decode(sys.stdin.encoding)  # what else?
+-        self.assertEqual(input_result, expected)
+-
+-    def test_input_tty(self):
+-        # Test input() functionality when wired to a tty (the code path
+-        # is different and invokes GNU readline if available).
+-        self.check_input_tty("prompt", b"quux")
+-
+-    def test_input_tty_non_ascii(self):
+-        # Check stdin/stdout encoding is used when invoking GNU readline
+-        self.check_input_tty("prompté", b"quux\xe9", "utf-8")
+-
+-    def test_input_tty_non_ascii_unicode_errors(self):
+-        # Check stdin/stdout error handler is used when invoking GNU readline
+-        self.check_input_tty("prompté", b"quux\xe9", "ascii")
+-
+-    def test_input_no_stdout_fileno(self):
+-        # Issue #24402: If stdin is the original terminal but stdout.fileno()
+-        # fails, do not use the original stdout file descriptor
+-        def child(wpipe):
+-            print("stdin.isatty():", sys.stdin.isatty(), file=wpipe)
+-            sys.stdout = io.StringIO()  # Does not support fileno()
+-            input("prompt")
+-            print("captured:", ascii(sys.stdout.getvalue()), file=wpipe)
+-        lines = self.run_child(child, b"quux\r")
+-        expected = (
+-            "stdin.isatty(): True",
+-            "captured: 'prompt'",
+-        )
+-        self.assertSequenceEqual(lines, expected)
+-
+ class TestSorted(unittest.TestCase):
+ 
+     def test_basic(self):
+         data = list(range(100))
+-        copy = data[:]
+-        random.shuffle(copy)
++        copy = data[50:] + data[:50]                                            ###
+         self.assertEqual(data, sorted(copy))
+         self.assertNotEqual(data, copy)
+ 
+         data.reverse()
+-        random.shuffle(copy)
++        copy = copy[30:] + copy[:30]                                            ###
+         self.assertEqual(data, sorted(copy, key=lambda x: -x))
+         self.assertNotEqual(data, copy)
+-        random.shuffle(copy)
++        copy = copy[10:] + copy[:10]                                            ###
+         self.assertEqual(data, sorted(copy, reverse=1))
+         self.assertNotEqual(data, copy)
+ 
+@@ -1634,44 +985,4 @@
+         self.assertRaises(TypeError, sorted, data, None, lambda x,y: 0)
+ 
+ 
+-class ShutdownTest(unittest.TestCase):
+-
+-    def test_cleanup(self):
+-        # Issue #19255: builtins are still available at shutdown
+-        code = """if 1:
+-            import builtins
+-            import sys
+-
+-            class C:
+-                def __del__(self):
+-                    print("before")
+-                    # Check that builtins still exist
+-                    len(())
+-                    print("after")
+-
+-            c = C()
+-            # Make this module survive until builtins and sys are cleaned
+-            builtins.here = sys.modules[__name__]
+-            sys.here = sys.modules[__name__]
+-            # Create a reference loop so that this module needs to go
+-            # through a GC phase.
+-            here = sys.modules[__name__]
+-            """
+-        # Issue #20599: Force ASCII encoding to get a codec implemented in C,
+-        # otherwise the codec may be unloaded before C.__del__() is called, and
+-        # so print("before") fails because the codec cannot be used to encode
+-        # "before" to sys.stdout.encoding. For example, on Windows,
+-        # sys.stdout.encoding is the OEM code page and these code pages are
+-        # implemented in Python
+-        rc, out, err = assert_python_ok("-c", code,
+-                                        PYTHONIOENCODING="ascii")
+-        self.assertEqual(["before", "after"], out.decode().splitlines())
+-
+-
+-def load_tests(loader, tests, pattern):
+-    from doctest import DocTestSuite
+-    tests.addTest(DocTestSuite(builtins))
+-    return tests
+-
+-if __name__ == "__main__":
+-    unittest.main()
++

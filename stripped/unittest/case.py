@@ -690,7 +690,7 @@ class TestCase(object):
                                                         safe_repr(delta))
         else:
             if places is None:
-                places = 7
+                places = 5                                                      ###
 
             # !MICROPY_PY_BUILTINS_ROUND_INT                                    ###
             if isinstance(first, int) and isinstance(second, int):              ###
@@ -728,7 +728,7 @@ class TestCase(object):
                                                         safe_repr(delta))
         else:
             if places is None:
-                places = 7
+                places = 5                                                      ###
             # !MICROPY_PY_BUILTINS_ROUND_INT                                    ###
             if isinstance(first, int) and isinstance(second, int):              ###
                 if first != second:                                             ###

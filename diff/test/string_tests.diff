@@ -1,0 +1,527 @@
+--- <CPython-3.4.9>/test/string_tests.py
++++ lib/test/string_tests.py
+@@ -2,9 +2,8 @@
+ Common tests shared by test_unicode, test_userstring and test_string.
+ """
+ 
+-import unittest, string, sys, struct
++import unittest, sys, struct                                                    ###
+ from test import support
+-from collections import UserList
+ 
+ class Sequence:
+     def __init__(self, seq='wxyz'): self.seq = seq
+@@ -107,13 +106,10 @@
+         self.checkequal(0, 'aaa', 'count', 'a', 0, -10)
+         self.checkequal(3, 'aaa', 'count', '', 1)
+         self.checkequal(1, 'aaa', 'count', '', 3)
+-        self.checkequal(0, 'aaa', 'count', '', 10)
+         self.checkequal(2, 'aaa', 'count', '', -1)
+         self.checkequal(4, 'aaa', 'count', '', -10)
+ 
+         self.checkequal(1, '', 'count', '')
+-        self.checkequal(0, '', 'count', '', 1, 1)
+-        self.checkequal(0, '', 'count', '', sys.maxsize, 0)
+ 
+         self.checkequal(0, '', 'count', 'xx')
+         self.checkequal(0, '', 'count', 'xx', 1, 1)
+@@ -121,16 +117,12 @@
+ 
+         self.checkraises(TypeError, 'hello', 'count')
+ 
+-        if self.contains_bytes:
+-            self.checkequal(0, 'hello', 'count', 42)
+-        else:
+-            self.checkraises(TypeError, 'hello', 'count', 42)
+ 
+         # For a variety of combinations,
+         #    verify that str.count() matches an equivalent function
+         #    replacing all occurrences and then differencing the string lengths
+         charset = ['', 'a', 'b']
+-        digits = 7
++        digits = 2                                                              ### Out of memory
+         base = len(charset)
+         teststrings = set()
+         for i in range(base ** digits):
+@@ -160,7 +152,6 @@
+ 
+         self.checkequal(0, 'abc', 'find', '', 0)
+         self.checkequal(3, 'abc', 'find', '', 3)
+-        self.checkequal(-1, 'abc', 'find', '', 4)
+ 
+         # to check the ability to pass None as defaults
+         self.checkequal( 2, 'rrarrrrrrrrra', 'find', 'a')
+@@ -171,27 +162,14 @@
+ 
+         self.checkraises(TypeError, 'hello', 'find')
+ 
+-        if self.contains_bytes:
+-            self.checkequal(-1, 'hello', 'find', 42)
+-        else:
+-            self.checkraises(TypeError, 'hello', 'find', 42)
+ 
+         self.checkequal(0, '', 'find', '')
+-        self.checkequal(-1, '', 'find', '', 1, 1)
+-        self.checkequal(-1, '', 'find', '', sys.maxsize, 0)
+-
+-        self.checkequal(-1, '', 'find', 'xx')
+-        self.checkequal(-1, '', 'find', 'xx', 1, 1)
+-        self.checkequal(-1, '', 'find', 'xx', sys.maxsize, 0)
+-
+-        # issue 7458
+-        self.checkequal(-1, 'ab', 'find', 'xxx', sys.maxsize + 1, 0)
+ 
+         # For a variety of combinations,
+         #    verify that str.find() matches __contains__
+         #    and that the found substring is really at that location
+         charset = ['', 'a', 'b', 'c']
+-        digits = 5
++        digits = 1                                                              ### Out of memory
+         base = len(charset)
+         teststrings = set()
+         for i in range(base ** digits):
+@@ -218,7 +196,6 @@
+ 
+         self.checkequal(3, 'abc', 'rfind', '', 0)
+         self.checkequal(3, 'abc', 'rfind', '', 3)
+-        self.checkequal(-1, 'abc', 'rfind', '', 4)
+ 
+         # to check the ability to pass None as defaults
+         self.checkequal(12, 'rrarrrrrrrrra', 'rfind', 'a')
+@@ -229,16 +206,12 @@
+ 
+         self.checkraises(TypeError, 'hello', 'rfind')
+ 
+-        if self.contains_bytes:
+-            self.checkequal(-1, 'hello', 'rfind', 42)
+-        else:
+-            self.checkraises(TypeError, 'hello', 'rfind', 42)
+ 
+         # For a variety of combinations,
+         #    verify that str.rfind() matches __contains__
+         #    and that the found substring is really at that location
+         charset = ['', 'a', 'b', 'c']
+-        digits = 5
++        digits = 1                                                              ### Out of memory
+         base = len(charset)
+         teststrings = set()
+         for i in range(base ** digits):
+@@ -257,8 +230,6 @@
+                 if loc != -1:
+                     self.assertEqual(i[loc:loc+len(j)], j)
+ 
+-        # issue 7458
+-        self.checkequal(-1, 'ab', 'rfind', 'xxx', sys.maxsize + 1, 0)
+ 
+         # issue #15534
+         self.checkequal(0, '<......\u043c...', "rfind", "<")
+@@ -283,11 +254,6 @@
+ 
+         self.checkraises(TypeError, 'hello', 'index')
+ 
+-        if self.contains_bytes:
+-            self.checkraises(ValueError, 'hello', 'index', 42)
+-        else:
+-            self.checkraises(TypeError, 'hello', 'index', 42)
+-
+     def test_rindex(self):
+         self.checkequal(12, 'abcdefghiabc', 'rindex', '')
+         self.checkequal(3,  'abcdefghiabc', 'rindex', 'def')
+@@ -308,11 +274,6 @@
+         self.checkequal( 2, 'rrarrrrrrrrra', 'rindex', 'a', None, 6)
+ 
+         self.checkraises(TypeError, 'hello', 'rindex')
+-
+-        if self.contains_bytes:
+-            self.checkraises(ValueError, 'hello', 'rindex', 42)
+-        else:
+-            self.checkraises(TypeError, 'hello', 'rindex', 42)
+ 
+     def test_lower(self):
+         self.checkequal('hello', 'HeLLo', 'lower')
+@@ -403,17 +364,6 @@
+         self.checkequal(['a']*18 + ['aBLAHa'], ('aBLAH'*20)[:-4],
+                         'split', 'BLAH', 18)
+ 
+-        # with keyword args
+-        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'split', sep='|')
+-        self.checkequal(['a', 'b|c|d'],
+-                        'a|b|c|d', 'split', '|', maxsplit=1)
+-        self.checkequal(['a', 'b|c|d'],
+-                        'a|b|c|d', 'split', sep='|', maxsplit=1)
+-        self.checkequal(['a', 'b|c|d'],
+-                        'a|b|c|d', 'split', maxsplit=1, sep='|')
+-        self.checkequal(['a', 'b c d'],
+-                        'a b c d', 'split', maxsplit=1)
+-
+         # argument type
+         self.checkraises(TypeError, 'hello', 'split', 42, 42, 42)
+ 
+@@ -428,8 +378,6 @@
+         self.checkequal(['a|b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 2)
+         self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 3)
+         self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|', 4)
+-        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', '|',
+-                        sys.maxsize-100)
+         self.checkequal(['a|b|c|d'], 'a|b|c|d', 'rsplit', '|', 0)
+         self.checkequal(['a||b||c', '', 'd'], 'a||b||c||d', 'rsplit', '|', 2)
+         self.checkequal(['', ' begincase'], '| begincase', 'rsplit', '|')
+@@ -448,22 +396,18 @@
+         self.checkequal(['a//b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 2)
+         self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 3)
+         self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//', 4)
+-        self.checkequal(['a', 'b', 'c', 'd'], 'a//b//c//d', 'rsplit', '//',
+-                        sys.maxsize-5)
+         self.checkequal(['a//b//c//d'], 'a//b//c//d', 'rsplit', '//', 0)
+         self.checkequal(['a////b////c', '', 'd'], 'a////b////c////d', 'rsplit', '//', 2)
+         self.checkequal(['', ' begincase'], 'test begincase', 'rsplit', 'test')
+         self.checkequal(['endcase ', ''], 'endcase test', 'rsplit', 'test')
+         self.checkequal(['', ' bothcase ', ''], 'test bothcase test',
+                         'rsplit', 'test')
+-        self.checkequal(['ab', 'c'], 'abbbc', 'rsplit', 'bb')
+         self.checkequal(['', ''], 'aaa', 'rsplit', 'aaa')
+         self.checkequal(['aaa'], 'aaa', 'rsplit', 'aaa', 0)
+         self.checkequal(['ab', 'ab'], 'abbaab', 'rsplit', 'ba')
+         self.checkequal(['aaaa'], 'aaaa', 'rsplit', 'aab')
+         self.checkequal([''], '', 'rsplit', 'aaa')
+         self.checkequal(['aa'], 'aa', 'rsplit', 'aaa')
+-        self.checkequal(['bbob', 'A'], 'bbobbbobbA', 'rsplit', 'bbobb')
+         self.checkequal(['', 'B', 'A'], 'bbobbBbbobbA', 'rsplit', 'bbobb')
+ 
+         self.checkequal(['a']*20, ('aBLAH'*20)[:-4], 'rsplit', 'BLAH')
+@@ -471,16 +415,6 @@
+         self.checkequal(['aBLAHa'] + ['a']*18, ('aBLAH'*20)[:-4],
+                         'rsplit', 'BLAH', 18)
+ 
+-        # with keyword args
+-        self.checkequal(['a', 'b', 'c', 'd'], 'a|b|c|d', 'rsplit', sep='|')
+-        self.checkequal(['a|b|c', 'd'],
+-                        'a|b|c|d', 'rsplit', '|', maxsplit=1)
+-        self.checkequal(['a|b|c', 'd'],
+-                        'a|b|c|d', 'rsplit', sep='|', maxsplit=1)
+-        self.checkequal(['a|b|c', 'd'],
+-                        'a|b|c|d', 'rsplit', maxsplit=1, sep='|')
+-        self.checkequal(['a b c', 'd'],
+-                        'a b c d', 'rsplit', maxsplit=1)
+ 
+         # argument type
+         self.checkraises(TypeError, 'hello', 'rsplit', 42, 42, 42)
+@@ -538,7 +472,6 @@
+         EQ("BCD", "ABCADAA", "replace", "A", "")
+         EQ("BCD", "BCD", "replace", "A", "")
+         EQ("*************", "*************", "replace", "A", "")
+-        EQ("^A^", "^"+"A"*1000+"^", "replace", "A", "", 999)
+ 
+         # substring deletion (from=="the", to=="")
+         EQ("", "the", "replace", "the", "")
+@@ -673,15 +606,6 @@
+         self.checkraises(TypeError, 'hello', 'replace', 42, 'h')
+         self.checkraises(TypeError, 'hello', 'replace', 'h', 42)
+ 
+-    @unittest.skipIf(sys.maxsize > (1 << 32) or struct.calcsize('P') != 4,
+-                     'only applies to 32-bit platforms')
+-    def test_replace_overflow(self):
+-        # Check for overflow checking on 32 bit machines
+-        A2_16 = "A" * (2**16)
+-        self.checkraises(OverflowError, A2_16, "replace", "", A2_16)
+-        self.checkraises(OverflowError, A2_16, "replace", "A", A2_16)
+-        self.checkraises(OverflowError, A2_16, "replace", "AA", A2_16+A2_16)
+-
+ 
+ 
+ class CommonTest(BaseTest):
+@@ -974,38 +898,16 @@
+         self.checkequal(True, 'hello', 'startswith', '', 5)
+         self.checkequal(False, 'hello', 'startswith', 'lo', 6)
+         self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3)
+-        self.checkequal(True, 'helloworld', 'startswith', 'lowo', 3, 7)
+-        self.checkequal(False, 'helloworld', 'startswith', 'lowo', 3, 6)
+ 
+         # test negative indices
+-        self.checkequal(True, 'hello', 'startswith', 'he', 0, -1)
+-        self.checkequal(True, 'hello', 'startswith', 'he', -53, -1)
+-        self.checkequal(False, 'hello', 'startswith', 'hello', 0, -1)
+-        self.checkequal(False, 'hello', 'startswith', 'hello world', -1, -10)
+         self.checkequal(False, 'hello', 'startswith', 'ello', -5)
+         self.checkequal(True, 'hello', 'startswith', 'ello', -4)
+         self.checkequal(False, 'hello', 'startswith', 'o', -2)
+         self.checkequal(True, 'hello', 'startswith', 'o', -1)
+-        self.checkequal(True, 'hello', 'startswith', '', -3, -3)
+         self.checkequal(False, 'hello', 'startswith', 'lo', -9)
+ 
+         self.checkraises(TypeError, 'hello', 'startswith')
+         self.checkraises(TypeError, 'hello', 'startswith', 42)
+-
+-        # test tuple arguments
+-        self.checkequal(True, 'hello', 'startswith', ('he', 'ha'))
+-        self.checkequal(False, 'hello', 'startswith', ('lo', 'llo'))
+-        self.checkequal(True, 'hello', 'startswith', ('hellox', 'hello'))
+-        self.checkequal(False, 'hello', 'startswith', ())
+-        self.checkequal(True, 'helloworld', 'startswith', ('hellowo',
+-                                                           'rld', 'lowo'), 3)
+-        self.checkequal(False, 'helloworld', 'startswith', ('hellowo', 'ello',
+-                                                            'rld'), 3)
+-        self.checkequal(True, 'hello', 'startswith', ('lo', 'he'), 0, -1)
+-        self.checkequal(False, 'hello', 'startswith', ('he', 'hel'), 0, 1)
+-        self.checkequal(True, 'hello', 'startswith', ('he', 'hel'), 0, 2)
+-
+-        self.checkraises(TypeError, 'hello', 'startswith', (42,))
+ 
+     def test_endswith(self):
+         self.checkequal(True, 'hello', 'endswith', 'lo')
+@@ -1013,106 +915,10 @@
+         self.checkequal(True, 'hello', 'endswith', '')
+         self.checkequal(False, 'hello', 'endswith', 'hello world')
+         self.checkequal(False, 'helloworld', 'endswith', 'worl')
+-        self.checkequal(True, 'helloworld', 'endswith', 'worl', 3, 9)
+-        self.checkequal(True, 'helloworld', 'endswith', 'world', 3, 12)
+-        self.checkequal(True, 'helloworld', 'endswith', 'lowo', 1, 7)
+-        self.checkequal(True, 'helloworld', 'endswith', 'lowo', 2, 7)
+-        self.checkequal(True, 'helloworld', 'endswith', 'lowo', 3, 7)
+-        self.checkequal(False, 'helloworld', 'endswith', 'lowo', 4, 7)
+-        self.checkequal(False, 'helloworld', 'endswith', 'lowo', 3, 8)
+-        self.checkequal(False, 'ab', 'endswith', 'ab', 0, 1)
+-        self.checkequal(False, 'ab', 'endswith', 'ab', 0, 0)
+-
+-        # test negative indices
+-        self.checkequal(True, 'hello', 'endswith', 'lo', -2)
+-        self.checkequal(False, 'hello', 'endswith', 'he', -2)
+-        self.checkequal(True, 'hello', 'endswith', '', -3, -3)
+-        self.checkequal(False, 'hello', 'endswith', 'hello world', -10, -2)
+-        self.checkequal(False, 'helloworld', 'endswith', 'worl', -6)
+-        self.checkequal(True, 'helloworld', 'endswith', 'worl', -5, -1)
+-        self.checkequal(True, 'helloworld', 'endswith', 'worl', -5, 9)
+-        self.checkequal(True, 'helloworld', 'endswith', 'world', -7, 12)
+-        self.checkequal(True, 'helloworld', 'endswith', 'lowo', -99, -3)
+-        self.checkequal(True, 'helloworld', 'endswith', 'lowo', -8, -3)
+-        self.checkequal(True, 'helloworld', 'endswith', 'lowo', -7, -3)
+-        self.checkequal(False, 'helloworld', 'endswith', 'lowo', 3, -4)
+-        self.checkequal(False, 'helloworld', 'endswith', 'lowo', -8, -2)
+-
+         self.checkraises(TypeError, 'hello', 'endswith')
+         self.checkraises(TypeError, 'hello', 'endswith', 42)
+ 
+-        # test tuple arguments
+-        self.checkequal(False, 'hello', 'endswith', ('he', 'ha'))
+-        self.checkequal(True, 'hello', 'endswith', ('lo', 'llo'))
+-        self.checkequal(True, 'hello', 'endswith', ('hellox', 'hello'))
+-        self.checkequal(False, 'hello', 'endswith', ())
+-        self.checkequal(True, 'helloworld', 'endswith', ('hellowo',
+-                                                           'rld', 'lowo'), 3)
+-        self.checkequal(False, 'helloworld', 'endswith', ('hellowo', 'ello',
+-                                                            'rld'), 3, -1)
+-        self.checkequal(True, 'hello', 'endswith', ('hell', 'ell'), 0, -1)
+-        self.checkequal(False, 'hello', 'endswith', ('he', 'hel'), 0, 1)
+-        self.checkequal(True, 'hello', 'endswith', ('he', 'hell'), 0, 4)
+-
+         self.checkraises(TypeError, 'hello', 'endswith', (42,))
+-
+-    def test___contains__(self):
+-        self.checkequal(True, '', '__contains__', '')
+-        self.checkequal(True, 'abc', '__contains__', '')
+-        self.checkequal(False, 'abc', '__contains__', '\0')
+-        self.checkequal(True, '\0abc', '__contains__', '\0')
+-        self.checkequal(True, 'abc\0', '__contains__', '\0')
+-        self.checkequal(True, '\0abc', '__contains__', 'a')
+-        self.checkequal(True, 'asdf', '__contains__', 'asdf')
+-        self.checkequal(False, 'asd', '__contains__', 'asdf')
+-        self.checkequal(False, '', '__contains__', 'asdf')
+-
+-    def test_subscript(self):
+-        self.checkequal('a', 'abc', '__getitem__', 0)
+-        self.checkequal('c', 'abc', '__getitem__', -1)
+-        self.checkequal('a', 'abc', '__getitem__', 0)
+-        self.checkequal('abc', 'abc', '__getitem__', slice(0, 3))
+-        self.checkequal('abc', 'abc', '__getitem__', slice(0, 1000))
+-        self.checkequal('a', 'abc', '__getitem__', slice(0, 1))
+-        self.checkequal('', 'abc', '__getitem__', slice(0, 0))
+-
+-        self.checkraises(TypeError, 'abc', '__getitem__', 'def')
+-
+-    def test_slice(self):
+-        self.checkequal('abc', 'abc', '__getitem__', slice(0, 1000))
+-        self.checkequal('abc', 'abc', '__getitem__', slice(0, 3))
+-        self.checkequal('ab', 'abc', '__getitem__', slice(0, 2))
+-        self.checkequal('bc', 'abc', '__getitem__', slice(1, 3))
+-        self.checkequal('b', 'abc', '__getitem__', slice(1, 2))
+-        self.checkequal('', 'abc', '__getitem__', slice(2, 2))
+-        self.checkequal('', 'abc', '__getitem__', slice(1000, 1000))
+-        self.checkequal('', 'abc', '__getitem__', slice(2000, 1000))
+-        self.checkequal('', 'abc', '__getitem__', slice(2, 1))
+-
+-        self.checkraises(TypeError, 'abc', '__getitem__', 'def')
+-
+-    def test_extended_getslice(self):
+-        # Test extended slicing by comparing with list slicing.
+-        s = string.ascii_letters + string.digits
+-        indices = (0, None, 1, 3, 41, -1, -2, -37)
+-        for start in indices:
+-            for stop in indices:
+-                # Skip step 0 (invalid)
+-                for step in indices[1:]:
+-                    L = list(s)[start:stop:step]
+-                    self.checkequal("".join(L), s, '__getitem__',
+-                                    slice(start, stop, step))
+-
+-    def test_mul(self):
+-        self.checkequal('', 'abc', '__mul__', -1)
+-        self.checkequal('', 'abc', '__mul__', 0)
+-        self.checkequal('abc', 'abc', '__mul__', 1)
+-        self.checkequal('abcabcabc', 'abc', '__mul__', 3)
+-        self.checkraises(TypeError, 'abc', '__mul__')
+-        self.checkraises(TypeError, 'abc', '__mul__', '')
+-        # XXX: on a 64-bit system, this doesn't raise an overflow error,
+-        # but either raises a MemoryError, or succeeds (if you have 54TiB)
+-        #self.checkraises(OverflowError, 10000*'abc', '__mul__', 2000000000)
+ 
+     def test_join(self):
+         # join now works with any sequence type
+@@ -1124,10 +930,9 @@
+         self.checkequal('ac', '', 'join', ('a', '', 'c', ''))
+         self.checkequal('w x y z', ' ', 'join', Sequence())
+         self.checkequal('abc', 'a', 'join', ('abc',))
+-        self.checkequal('z', 'a', 'join', UserList(['z']))
+         self.checkequal('a.b.c', '.', 'join', ['a', 'b', 'c'])
+         self.assertRaises(TypeError, '.'.join, ['a', 'b', 3])
+-        for i in [5, 25, 125]:
++        for i in [5]:                                                           ###
+             self.checkequal(((('a' * i) + '-') * i)[:-1], '-', 'join',
+                  ['a' * i] * i)
+             self.checkequal(((('a' * i) + '-') * i)[:-1], '-', 'join',
+@@ -1140,92 +945,6 @@
+         self.checkraises(TypeError, ' ', 'join', None)
+         self.checkraises(TypeError, ' ', 'join', 7)
+         self.checkraises(TypeError, ' ', 'join', [1, 2, bytes()])
+-        try:
+-            def f():
+-                yield 4 + ""
+-            self.fixtype(' ').join(f())
+-        except TypeError as e:
+-            if '+' not in str(e):
+-                self.fail('join() ate exception message')
+-        else:
+-            self.fail('exception not raised')
+-
+-    def test_formatting(self):
+-        self.checkequal('+hello+', '+%s+', '__mod__', 'hello')
+-        self.checkequal('+10+', '+%d+', '__mod__', 10)
+-        self.checkequal('a', "%c", '__mod__', "a")
+-        self.checkequal('a', "%c", '__mod__', "a")
+-        self.checkequal('"', "%c", '__mod__', 34)
+-        self.checkequal('$', "%c", '__mod__', 36)
+-        self.checkequal('10', "%d", '__mod__', 10)
+-        self.checkequal('\x7f', "%c", '__mod__', 0x7f)
+-
+-        for ordinal in (-100, 0x200000):
+-            # unicode raises ValueError, str raises OverflowError
+-            self.checkraises((ValueError, OverflowError), '%c', '__mod__', ordinal)
+-
+-        longvalue = sys.maxsize + 10
+-        slongvalue = str(longvalue)
+-        self.checkequal(' 42', '%3ld', '__mod__', 42)
+-        self.checkequal('42', '%d', '__mod__', 42.0)
+-        self.checkequal(slongvalue, '%d', '__mod__', longvalue)
+-        self.checkcall('%d', '__mod__', float(longvalue))
+-        self.checkequal('0042.00', '%07.2f', '__mod__', 42)
+-        self.checkequal('0042.00', '%07.2F', '__mod__', 42)
+-
+-        self.checkraises(TypeError, 'abc', '__mod__')
+-        self.checkraises(TypeError, '%(foo)s', '__mod__', 42)
+-        self.checkraises(TypeError, '%s%s', '__mod__', (42,))
+-        with self.assertWarns(DeprecationWarning):
+-            self.checkraises(TypeError, '%c', '__mod__', (None,))
+-        self.checkraises(ValueError, '%(foo', '__mod__', {})
+-        self.checkraises(TypeError, '%(foo)s %(bar)s', '__mod__', ('foo', 42))
+-        self.checkraises(TypeError, '%d', '__mod__', "42") # not numeric
+-        self.checkraises(TypeError, '%d', '__mod__', (42+0j)) # no int conversion provided
+-
+-        # argument names with properly nested brackets are supported
+-        self.checkequal('bar', '%((foo))s', '__mod__', {'(foo)': 'bar'})
+-
+-        # 100 is a magic number in PyUnicode_Format, this forces a resize
+-        self.checkequal(103*'a'+'x', '%sx', '__mod__', 103*'a')
+-
+-        self.checkraises(TypeError, '%*s', '__mod__', ('foo', 'bar'))
+-        self.checkraises(TypeError, '%10.*f', '__mod__', ('foo', 42.))
+-        self.checkraises(ValueError, '%10', '__mod__', (42,))
+-
+-        # Outrageously large width or precision should raise ValueError.
+-        self.checkraises(ValueError, '%%%df' % (2**64), '__mod__', (3.2))
+-        self.checkraises(ValueError, '%%.%df' % (2**64), '__mod__', (3.2))
+-        self.checkraises(OverflowError, '%*s', '__mod__',
+-                         (sys.maxsize + 1, ''))
+-        self.checkraises(OverflowError, '%.*f', '__mod__',
+-                         (sys.maxsize + 1, 1. / 7))
+-
+-        class X(object): pass
+-        self.checkraises(TypeError, 'abc', '__mod__', X())
+-
+-    @support.cpython_only
+-    def test_formatting_c_limits(self):
+-        from _testcapi import PY_SSIZE_T_MAX, INT_MAX, UINT_MAX
+-        SIZE_MAX = (1 << (PY_SSIZE_T_MAX.bit_length() + 1)) - 1
+-        self.checkraises(OverflowError, '%*s', '__mod__',
+-                         (PY_SSIZE_T_MAX + 1, ''))
+-        self.checkraises(OverflowError, '%.*f', '__mod__',
+-                         (INT_MAX + 1, 1. / 7))
+-        # Issue 15989
+-        self.checkraises(OverflowError, '%*s', '__mod__',
+-                         (SIZE_MAX + 1, ''))
+-        self.checkraises(OverflowError, '%.*f', '__mod__',
+-                         (UINT_MAX + 1, 1. / 7))
+-
+-    def test_floatformatting(self):
+-        # float formatting
+-        for prec in range(100):
+-            format = '%%.%if' % prec
+-            value = 0.01
+-            for x in range(60):
+-                value = value * 3.14159265359 / 3.0 * 10.0
+-                self.checkcall(format, "__mod__", value)
+ 
+     def test_inplace_rewrites(self):
+         # Check that strings don't copy and modify cached single-character strings
+@@ -1303,38 +1022,6 @@
+         self.checkequal(1, s, 'count', 'l', -2, None)
+         self.checkequal(1, s, 'count', 'l', None, -2)
+         self.checkequal(0, s, 'count', 'x', None, None)
+-
+-        self.checkequal(True, s, 'endswith', 'o', None)
+-        self.checkequal(True, s, 'endswith', 'lo', -2, None)
+-        self.checkequal(True, s, 'endswith', 'l', None, -2)
+-        self.checkequal(False, s, 'endswith', 'x', None, None)
+-
+-        self.checkequal(True, s, 'startswith', 'h', None)
+-        self.checkequal(True, s, 'startswith', 'l', -2, None)
+-        self.checkequal(True, s, 'startswith', 'h', None, -2)
+-        self.checkequal(False, s, 'startswith', 'x', None, None)
+-
+-    def test_find_etc_raise_correct_error_messages(self):
+-        # issue 11828
+-        s = 'hello'
+-        x = 'x'
+-        self.assertRaisesRegex(TypeError, r'^find\(', s.find,
+-                                x, None, None, None)
+-        self.assertRaisesRegex(TypeError, r'^rfind\(', s.rfind,
+-                                x, None, None, None)
+-        self.assertRaisesRegex(TypeError, r'^index\(', s.index,
+-                                x, None, None, None)
+-        self.assertRaisesRegex(TypeError, r'^rindex\(', s.rindex,
+-                                x, None, None, None)
+-        self.assertRaisesRegex(TypeError, r'^count\(', s.count,
+-                                x, None, None, None)
+-        self.assertRaisesRegex(TypeError, r'^startswith\(', s.startswith,
+-                                x, None, None, None)
+-        self.assertRaisesRegex(TypeError, r'^endswith\(', s.endswith,
+-                                x, None, None, None)
+-
+-        # issue #15534
+-        self.checkequal(10, "...\u043c......<", "find", "<")
+ 
+ 
+ class MixinStrUnicodeTest:
+@@ -1381,3 +1068,4 @@
+ 
+         else:
+             self.fail("unexpected type for MixinStrUnicodeTest %r" % t)
++

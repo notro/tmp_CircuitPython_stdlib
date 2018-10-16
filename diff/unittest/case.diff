@@ -289,12 +289,16 @@
  
      def _getAssertEqualityFunc(self, first, second):
          """Get a detailed comparison function for the types of the two args.
-@@ -838,8 +692,13 @@
+@@ -836,10 +690,15 @@
+                                                         safe_repr(delta))
+         else:
              if places is None:
-                 places = 7
- 
+-                places = 7
+-
 -            if round(abs(second-first), places) == 0:
 -                return
++                places = 5                                                      ###
++
 +            # !MICROPY_PY_BUILTINS_ROUND_INT                                    ###
 +            if isinstance(first, int) and isinstance(second, int):              ###
 +                if first == second:                                             ###
@@ -305,12 +309,14 @@
  
              standardMsg = '%s != %s within %r places' % (safe_repr(first),
                                                            safe_repr(second),
-@@ -870,8 +729,13 @@
+@@ -869,9 +728,14 @@
+                                                         safe_repr(delta))
          else:
              if places is None:
-                 places = 7
+-                places = 7
 -            if not (first == second) and round(abs(second-first), places) != 0:
 -                return
++                places = 5                                                      ###
 +            # !MICROPY_PY_BUILTINS_ROUND_INT                                    ###
 +            if isinstance(first, int) and isinstance(second, int):              ###
 +                if first != second:                                             ###

@@ -3,14 +3,14 @@
 import contextlib
 import os
 import shutil
+import sys
+import unittest
 UnicodeDecodeError = UnicodeError                                               ###
 
 def import_module(name, deprecated=False, *, required_on=()):
         try:
             return __import__(name)                                             ###
         except ImportError as msg:
-            if sys.platform.startswith(tuple(required_on)):
-                raise
             raise unittest.SkipTest(str(msg))
 
 
