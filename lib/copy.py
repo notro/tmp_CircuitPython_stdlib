@@ -51,6 +51,7 @@ __getstate__() and __setstate__().  See the documentation for module
 import types
 #import weakref
 #from copyreg import dispatch_table
+import copyreg                                                                  ###
 import builtins
 
 class Error(Exception):
@@ -101,7 +102,8 @@ def copy(x):
             if reductor:
                 rv = reductor()
             else:
-                raise Error("un(shallow)copyable object of type %s" % cls)
+#                raise Error("un(shallow)copyable object of type %s" % cls)
+                rv = copyreg._reduce_ex(x, 1)                                   ### object doesn't have __reduce_ex__
 
     return _reconstruct(x, rv, 0)
 
@@ -180,8 +182,9 @@ def deepcopy(x, memo=None, _nil=[]):
                         if reductor:
                             rv = reductor()
                         else:
-                            raise Error(
-                                "un(deep)copyable object of type %s" % cls)
+#                            raise Error(
+#                                "un(deep)copyable object of type %s" % cls)
+                            rv = copyreg._reduce_ex(x, 1)                       ### object doesn't have __reduce_ex__
                 y = _reconstruct(x, rv, 1, memo)
 
     # If is its own copy, don't memoize.
@@ -309,7 +312,9 @@ def _reconstruct(x, info, deep, memo=None):
             else:
                 slotstate = None
             if state is not None:
-                y.__dict__.update(state)
+#                y.__dict__.update(state)
+                for key, value in state.items():                                ### __dict__ is a readonly copy
+                    setattr(y, key, value)                                      ###
             if slotstate is not None:
                 for key, value in slotstate.items():
                     setattr(y, key, value)
