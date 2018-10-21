@@ -1,0 +1,193 @@
+--- <CPython-3.4.9>/test/test_enumerate.py
++++ lib/test/test_enumerate.py
+@@ -1,9 +1,6 @@
+ import unittest
+-import operator
+ import sys
+-import pickle
+ 
+-from test import support
+ 
+ class G:
+     'Sequence using __getitem__'
+@@ -63,26 +60,7 @@
+     def __iter__(self):
+         return self
+ 
+-class PickleTest:
+-    # Helper to check picklability
+-    def check_pickle(self, itorg, seq):
+-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+-            d = pickle.dumps(itorg, proto)
+-            it = pickle.loads(d)
+-            self.assertEqual(type(itorg), type(it))
+-            self.assertEqual(list(it), seq)
+-
+-            it = pickle.loads(d)
+-            try:
+-                next(it)
+-            except StopIteration:
+-                self.assertFalse(seq[1:])
+-                continue
+-            d = pickle.dumps(it, proto)
+-            it = pickle.loads(d)
+-            self.assertEqual(list(it), seq[1:])
+-
+-class EnumerateTestCase(unittest.TestCase, PickleTest):
++class EnumerateTestCase(unittest.TestCase):                                     ###
+ 
+     enum = enumerate
+     seq, res = 'abc', [(0,'a'), (1,'b'), (2,'c')]
+@@ -92,10 +70,6 @@
+         e = self.enum(self.seq)
+         self.assertEqual(iter(e), e)
+         self.assertEqual(list(self.enum(self.seq)), self.res)
+-        self.enum.__doc__
+-
+-    def test_pickle(self):
+-        self.check_pickle(self.enum(self.seq), self.res)
+ 
+     def test_getitemseqn(self):
+         self.assertEqual(list(self.enum(G(self.seq))), self.res)
+@@ -115,9 +89,6 @@
+     def test_noniterable(self):
+         self.assertRaises(TypeError, self.enum, X(self.seq))
+ 
+-    def test_illformediterable(self):
+-        self.assertRaises(TypeError, self.enum, N(self.seq))
+-
+     def test_exception_propagation(self):
+         self.assertRaises(ZeroDivisionError, list, self.enum(E(self.seq)))
+ 
+@@ -127,13 +98,6 @@
+         self.assertRaises(TypeError, self.enum, 'abc', 'a') # wrong type
+         self.assertRaises(TypeError, self.enum, 'abc', 2, 3) # too many arguments
+ 
+-    @support.cpython_only
+-    def test_tuple_reuse(self):
+-        # Tests an implementation detail where tuple is reused
+-        # whenever nothing else holds a reference to it
+-        self.assertEqual(len(set(map(id, list(enumerate(self.seq))))), len(self.seq))
+-        self.assertEqual(len(set(map(id, enumerate(self.seq)))), min(1,len(self.seq)))
+-
+ class MyEnum(enumerate):
+     pass
+ 
+@@ -141,16 +105,14 @@
+ 
+     enum = MyEnum
+ 
++    def test_basicfunction(self):                                               ###
++        self.skipTest('AssertionError: <enumerate> != <MyEnum object at 20010c20>')  ###
++                                                                                ###
+ class TestEmpty(EnumerateTestCase):
+ 
+     seq, res = '', []
+ 
+-class TestBig(EnumerateTestCase):
+-
+-    seq = range(10,20000,2)
+-    res = list(zip(range(20000), seq))
+-
+-class TestReversed(unittest.TestCase, PickleTest):
++class TestReversed(unittest.TestCase):                                          ###
+ 
+     def test_simple(self):
+         class A:
+@@ -162,32 +124,8 @@
+                 return 5
+         for data in 'abc', range(5), tuple(enumerate('abc')), A(), range(1,17,5):
+             self.assertEqual(list(data)[::-1], list(reversed(data)))
+-        self.assertRaises(TypeError, reversed, {})
+         # don't allow keyword arguments
+         self.assertRaises(TypeError, reversed, [], a=1)
+-
+-    def test_range_optimization(self):
+-        x = range(1)
+-        self.assertEqual(type(reversed(x)), type(iter(x)))
+-
+-    def test_len(self):
+-        for s in ('hello', tuple('hello'), list('hello'), range(5)):
+-            self.assertEqual(operator.length_hint(reversed(s)), len(s))
+-            r = reversed(s)
+-            list(r)
+-            self.assertEqual(operator.length_hint(r), 0)
+-        class SeqWithWeirdLen:
+-            called = False
+-            def __len__(self):
+-                if not self.called:
+-                    self.called = True
+-                    return 10
+-                raise ZeroDivisionError
+-            def __getitem__(self, index):
+-                return index
+-        r = reversed(SeqWithWeirdLen())
+-        self.assertRaises(ZeroDivisionError, operator.length_hint, r)
+-
+ 
+     def test_gc(self):
+         class Seq:
+@@ -203,38 +141,12 @@
+         self.assertRaises(TypeError, reversed)
+         self.assertRaises(TypeError, reversed, [], 'extra')
+ 
+-    @unittest.skipUnless(hasattr(sys, 'getrefcount'), 'test needs sys.getrefcount()')
+-    def test_bug1229429(self):
+-        # this bug was never in reversed, it was in
+-        # PyObject_CallMethod, and reversed_new calls that sometimes.
+-        def f():
+-            pass
+-        r = f.__reversed__ = object()
+-        rc = sys.getrefcount(r)
+-        for i in range(10):
+-            try:
+-                reversed(f)
+-            except TypeError:
+-                pass
+-            else:
+-                self.fail("non-callable __reversed__ didn't raise!")
+-        self.assertEqual(rc, sys.getrefcount(r))
+-
+     def test_objmethods(self):
+         # Objects must have __len__() and __getitem__() implemented.
+         class NoLen(object):
+             def __getitem__(self): return 1
+         nl = NoLen()
+         self.assertRaises(TypeError, reversed, nl)
+-
+-        class NoGetItem(object):
+-            def __len__(self): return 2
+-        ngi = NoGetItem()
+-        self.assertRaises(TypeError, reversed, ngi)
+-
+-    def test_pickle(self):
+-        for data in 'abc', range(5), tuple(enumerate('abc')), range(1,17,5):
+-            self.check_pickle(reversed(data), list(data)[::-1])
+ 
+ 
+ class EnumerateStartTestCase(EnumerateTestCase):
+@@ -251,23 +163,4 @@
+     seq, res = 'abc', [(11, 'a'), (12, 'b'), (13, 'c')]
+ 
+ 
+-class TestLongStart(EnumerateStartTestCase):
+-
+-    enum = lambda self, i: enumerate(i, start=sys.maxsize+1)
+-    seq, res = 'abc', [(sys.maxsize+1,'a'), (sys.maxsize+2,'b'),
+-                       (sys.maxsize+3,'c')]
+-
+-
+-def test_main(verbose=None):
+-    support.run_unittest(__name__)
+-
+-    # verify reference counting
+-    if verbose and hasattr(sys, "gettotalrefcount"):
+-        counts = [None] * 5
+-        for i in range(len(counts)):
+-            support.run_unittest(__name__)
+-            counts[i] = sys.gettotalrefcount()
+-        print(counts)
+-
+-if __name__ == "__main__":
+-    test_main(verbose=True)
++

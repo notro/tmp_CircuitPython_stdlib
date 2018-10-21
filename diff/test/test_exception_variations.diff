@@ -1,0 +1,18 @@
+--- <CPython-3.4.9>/test/test_exception_variations.py
++++ lib/test/test_exception_variations.py
+@@ -1,5 +1,4 @@
+ 
+-from test.support import run_unittest
+ import unittest
+ 
+ class ExceptionTestCase(unittest.TestCase):
+@@ -173,8 +172,4 @@
+         self.assertTrue(hit_finally)
+         self.assertTrue(hit_except)
+ 
+-def test_main():
+-    run_unittest(ExceptionTestCase)
+-
+-if __name__ == '__main__':
+-    test_main()
++

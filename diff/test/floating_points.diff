@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/test/floating_points.txt
++++ lib/test/floating_points.txt
+@@ -1026,3 +1026,4 @@
+ 
+ # Another value designed to test a corner case of Python's strtod code.
+ 0.99999999999999999999999999999999999999999e+23
++

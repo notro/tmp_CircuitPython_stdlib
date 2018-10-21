@@ -1,0 +1,120 @@
+--- <CPython-3.4.9>/copy.py
++++ lib/copy.py
+@@ -49,20 +49,14 @@
+ """
+ 
+ import types
+-import weakref
+-from copyreg import dispatch_table
++import copyreg                                                                  ###
+ import builtins
+ 
+ class Error(Exception):
+     pass
+ error = Error   # backward compatibility
+ 
+-try:
+-    from org.python.core import PyStringMap
+-except ImportError:
+-    PyStringMap = None
+-
+-__all__ = ["Error", "copy", "deepcopy"]
++
+ 
+ def copy(x):
+     """Shallow copy operation on arbitrary Python objects.
+@@ -88,10 +82,7 @@
+     if copier:
+         return copier(x)
+ 
+-    reductor = dispatch_table.get(cls)
+-    if reductor:
+-        rv = reductor(x)
+-    else:
++    if True:                                                                    ###
+         reductor = getattr(x, "__reduce_ex__", None)
+         if reductor:
+             rv = reductor(2)
+@@ -100,7 +91,7 @@
+             if reductor:
+                 rv = reductor()
+             else:
+-                raise Error("un(shallow)copyable object of type %s" % cls)
++                rv = copyreg._reduce_ex(x, 1)                                   ### object doesn't have __reduce_ex__
+ 
+     return _reconstruct(x, rv, 0)
+ 
+@@ -112,7 +103,7 @@
+ for t in (type(None), int, float, bool, str, tuple,
+           bytes, frozenset, type, range,
+           types.BuiltinFunctionType, type(Ellipsis),
+-          types.FunctionType, weakref.ref):
++          types.FunctionType):                                                  ###
+     d[t] = _copy_immutable
+ t = getattr(types, "CodeType", None)
+ if t is not None:
+@@ -127,10 +118,6 @@
+ for t in (list, dict, set):
+     d[t] = _copy_with_constructor
+ 
+-def _copy_with_copy_method(x):
+-    return x.copy()
+-if PyStringMap is not None:
+-    d[PyStringMap] = _copy_with_copy_method
+ 
+ del d
+ 
+@@ -165,10 +152,7 @@
+             if copier:
+                 y = copier(memo)
+             else:
+-                reductor = dispatch_table.get(cls)
+-                if reductor:
+-                    rv = reductor(x)
+-                else:
++                if True:                                                        ###
+                     reductor = getattr(x, "__reduce_ex__", None)
+                     if reductor:
+                         rv = reductor(2)
+@@ -177,8 +161,7 @@
+                         if reductor:
+                             rv = reductor()
+                         else:
+-                            raise Error(
+-                                "un(deep)copyable object of type %s" % cls)
++                            rv = copyreg._reduce_ex(x, 1)                       ### object doesn't have __reduce_ex__
+                 y = _reconstruct(x, rv, 1, memo)
+ 
+     # If is its own copy, don't memoize.
+@@ -210,7 +193,6 @@
+ d[range] = _deepcopy_atomic
+ d[types.BuiltinFunctionType] = _deepcopy_atomic
+ d[types.FunctionType] = _deepcopy_atomic
+-d[weakref.ref] = _deepcopy_atomic
+ 
+ def _deepcopy_list(x, memo):
+     y = []
+@@ -246,8 +228,6 @@
+         y[deepcopy(key, memo)] = deepcopy(value, memo)
+     return y
+ d[dict] = _deepcopy_dict
+-if PyStringMap is not None:
+-    d[PyStringMap] = _deepcopy_dict
+ 
+ def _deepcopy_method(x, memo): # Copy instance methods
+     return type(x)(x.__func__, deepcopy(x.__self__, memo))
+@@ -306,7 +286,8 @@
+             else:
+                 slotstate = None
+             if state is not None:
+-                y.__dict__.update(state)
++                for key, value in state.items():                                ### __dict__ is a readonly copy
++                    setattr(y, key, value)                                      ###
+             if slotstate is not None:
+                 for key, value in slotstate.items():
+                     setattr(y, key, value)
+@@ -331,3 +312,4 @@
+ # Helper for instance creation without calling __init__
+ class _EmptyClass:
+     pass
++

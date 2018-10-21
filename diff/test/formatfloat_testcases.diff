@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/test/formatfloat_testcases.txt
++++ lib/test/formatfloat_testcases.txt
+@@ -353,3 +353,4 @@
+ %r 0.999999999999e-4 -> 9.99999999999e-05
+ %r 0.999e-4 -> 9.99e-05
+ %r 1e-5 -> 1e-05
++

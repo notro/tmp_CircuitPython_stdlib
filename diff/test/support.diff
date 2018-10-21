@@ -1847,37 +1847,10 @@
  @contextlib.contextmanager
  def swap_attr(obj, attr, new_val):
      """Temporary swap out an attribute with a new object.
-@@ -2009,255 +237,9 @@
+@@ -2036,228 +264,9 @@
          finally:
-             delattr(obj, attr)
+             del obj[item]
  
--@contextlib.contextmanager
--def swap_item(obj, item, new_val):
--    """Temporary swap out an item with a new object.
--
--    Usage:
--        with swap_item(obj, "item", 5):
--            ...
--
--        This will set obj["item"] to 5 for the duration of the with: block,
--        restoring the old value at the end of the block. If `item` doesn't
--        exist on `obj`, it will be created and then deleted at the end of the
--        block.
--    """
--    if item in obj:
--        real_val = obj[item]
--        obj[item] = new_val
--        try:
--            yield
--        finally:
--            obj[item] = real_val
--    else:
--        obj[item] = new_val
--        try:
--            yield
--        finally:
--            del obj[item]
--
 -def strip_python_stderr(stderr):
 -    """Strip the stderr of a Python process from potential debug output
 -    emitted by the interpreter.
@@ -2104,7 +2077,7 @@
      # check that 'attr_name' is a real attribute for 'object_to_patch'
      # will raise AttributeError if it does not exist
      getattr(object_to_patch, attr_name)
-@@ -2273,10 +255,7 @@
+@@ -2273,10 +282,7 @@
  
      # restore the value when the test is done
      def cleanup():
@@ -2115,7 +2088,7 @@
  
      test_instance.addCleanup(cleanup)
  
-@@ -2284,21 +263,4 @@
+@@ -2284,21 +290,4 @@
      setattr(object_to_patch, attr_name, new_value)
  
  
