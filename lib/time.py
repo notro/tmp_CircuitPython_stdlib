@@ -1,7 +1,7 @@
 # MIT License
 # Copyright 2018 Noralf Trønnes
 
-from utime import localtime, mktime, monotonic, sleep, struct_time, time
+from _time import localtime, mktime, monotonic, sleep, struct_time, time
 
 
 
