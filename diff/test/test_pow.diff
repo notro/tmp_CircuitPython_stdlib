@@ -1,0 +1,88 @@
+--- <CPython-3.4.9>/test/test_pow.py
++++ lib/test/test_pow.py
+@@ -33,29 +33,6 @@
+                     continue
+                 self.assertRaises(ZeroDivisionError, pow, zero, exp)
+ 
+-        il, ih = -20, 20
+-        jl, jh = -5,   5
+-        kl, kh = -10, 10
+-        asseq = self.assertEqual
+-        if type == float:
+-            il = 1
+-            asseq = self.assertAlmostEqual
+-        elif type == int:
+-            jl = 0
+-        elif type == int:
+-            jl, jh = 0, 15
+-        for i in range(il, ih+1):
+-            for j in range(jl, jh+1):
+-                for k in range(kl, kh+1):
+-                    if k != 0:
+-                        if type == float or j < 0:
+-                            self.assertRaises(TypeError, pow, type(i), j, k)
+-                            continue
+-                        asseq(
+-                            pow(type(i),j,k),
+-                            pow(type(i),j)% type(k)
+-                        )
+-
+     def test_powint(self):
+         self.powtest(int)
+ 
+@@ -64,36 +41,6 @@
+ 
+     def test_powfloat(self):
+         self.powtest(float)
+-
+-    def test_other(self):
+-        # Other tests-- not very systematic
+-        self.assertEqual(pow(3,3) % 8, pow(3,3,8))
+-        self.assertEqual(pow(3,3) % -8, pow(3,3,-8))
+-        self.assertEqual(pow(3,2) % -2, pow(3,2,-2))
+-        self.assertEqual(pow(-3,3) % 8, pow(-3,3,8))
+-        self.assertEqual(pow(-3,3) % -8, pow(-3,3,-8))
+-        self.assertEqual(pow(5,2) % -8, pow(5,2,-8))
+-
+-        self.assertEqual(pow(3,3) % 8, pow(3,3,8))
+-        self.assertEqual(pow(3,3) % -8, pow(3,3,-8))
+-        self.assertEqual(pow(3,2) % -2, pow(3,2,-2))
+-        self.assertEqual(pow(-3,3) % 8, pow(-3,3,8))
+-        self.assertEqual(pow(-3,3) % -8, pow(-3,3,-8))
+-        self.assertEqual(pow(5,2) % -8, pow(5,2,-8))
+-
+-        for i in range(-10, 11):
+-            for j in range(0, 6):
+-                for k in range(-7, 11):
+-                    if j >= 0 and k != 0:
+-                        self.assertEqual(
+-                            pow(i,j) % k,
+-                            pow(i,j,k)
+-                        )
+-                    if j >= 0 and k != 0:
+-                        self.assertEqual(
+-                            pow(int(i),j) % k,
+-                            pow(int(i),j,k)
+-                        )
+ 
+     def test_bug643260(self):
+         class TestRpow:
+@@ -113,7 +60,7 @@
+         eq(pow(a, -1.23e167), 1.0)
+         for b in range(-10, 11):
+             eq(pow(a, float(b)), b & 1 and -1.0 or 1.0)
+-        for n in range(0, 100):
++        for n in range(0, 50):                                                  ###
+             fiveto = float(5 ** n)
+             # For small n, fiveto will be odd.  Eventually we run out of
+             # mantissa bits, though, and thereafer fiveto will be even.
+@@ -122,8 +69,4 @@
+             eq(pow(a, -fiveto), expected)
+         eq(expected, 1.0)   # else we didn't push fiveto to evenness
+ 
+-def test_main():
+-    test.support.run_unittest(PowTest)
+-
+-if __name__ == "__main__":
+-    test_main()
++
