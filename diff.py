@@ -12,10 +12,7 @@ class File:
         self.missing = False
 
         if not os.path.exists(self.original):
-            if self.rel == 'test/support.py':
-                self.original = os.path.join(original_dir, 'test/support/__init__.py')
-            else:
-                self.original = None
+            self.original = None
 
     def __str__(self):
         return 'File({!r}): path={!r}, original={!r}'.format(self.rel, self.path, self.original)
