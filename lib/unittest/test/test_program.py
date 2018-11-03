@@ -25,35 +25,35 @@ class Test_TestProgram(unittest.TestCase):
         self.assertTrue(self.wasRun)
         self.assertEqual(suite._tests, tests)
 
-    # Horrible white box test
-    def testNoExit(self):
-        result = object()
-        test = object()
-
-        class FakeRunner(object):
-            def run(self, test):
-                self.test = test
-                return result
-
-        runner = FakeRunner()
-
-        oldParseArgs = unittest.TestProgram.parseArgs
-        def restoreParseArgs():
-            unittest.TestProgram.parseArgs = oldParseArgs
-        unittest.TestProgram.parseArgs = lambda *args: None
-        self.addCleanup(restoreParseArgs)
-
-        def removeTest():
-            del unittest.TestProgram.test
-        unittest.TestProgram.test = test
-        self.addCleanup(removeTest)
-
-        program = unittest.TestProgram(testRunner=runner, exit=False, verbosity=2)
-
-        self.assertEqual(program.result, result)
-        self.assertEqual(runner.test, test)
-        self.assertEqual(program.verbosity, 2)
-
+#    # Horrible white box test
+#    def testNoExit(self):
+#        result = object()
+#        test = object()
+#
+#        class FakeRunner(object):
+#            def run(self, test):
+#                self.test = test
+#                return result
+#
+#        runner = FakeRunner()
+#
+#        oldParseArgs = unittest.TestProgram.parseArgs
+#        def restoreParseArgs():
+#            unittest.TestProgram.parseArgs = oldParseArgs
+#        unittest.TestProgram.parseArgs = lambda *args: None
+#        self.addCleanup(restoreParseArgs)
+#
+#        def removeTest():
+#            del unittest.TestProgram.test
+#        unittest.TestProgram.test = test
+#        self.addCleanup(removeTest)
+#
+#        program = unittest.TestProgram(testRunner=runner, exit=False, verbosity=2)
+#
+#        self.assertEqual(program.result, result)
+#        self.assertEqual(runner.test, test)
+#        self.assertEqual(program.verbosity, 2)
+#
     class FooBar(unittest.TestCase):
         def testPass(self):
             assert True
@@ -383,26 +383,24 @@ class TestCommandLineArgs(unittest.TestCase):
         expected = ['foo.bar.baz', 'green.red']
         self.assertEqual(program.testNames, expected)
 
-    def testParseArgsAbsolutePathsThatCannotBeConverted(self):
+#    def testParseArgsAbsolutePathsThatCannotBeConverted(self):
 #        program = self.program
-        program = unittest.TestProgram(tests=None)                              ###
-        # even on Windows '/...' is considered absolute by os.path.abspath
-        argv = ['progname', '/foo/bar/baz.py', '/green/red.py']
-        program.tests = argv[1:]                                                ###
-        self._patch_isfile(argv)
-
-        program.createTests = lambda: None
-        program.parseArgs(argv)
-
-        self.assertEqual(program.testNames, argv[1:])
-
-        # it may be better to use platform specific functions to normalise paths
-        # rather than accepting '.PY' and '\' as file separator on Linux / Mac
-        # it would also be better to check that a filename is a valid module
-        # identifier (we have a regex for this in loader.py)
-        # for invalid filenames should we raise a useful error rather than
-        # leaving the current error message (import of filename fails) in place?
-
-
-if __name__ == '__main__':
-    unittest.main()
+#        # even on Windows '/...' is considered absolute by os.path.abspath
+#        argv = ['progname', '/foo/bar/baz.py', '/green/red.py']
+#        self._patch_isfile(argv)
+#
+#        program.createTests = lambda: None
+#        program.parseArgs(argv)
+#
+#        self.assertEqual(program.testNames, argv[1:])
+#
+#        # it may be better to use platform specific functions to normalise paths
+#        # rather than accepting '.PY' and '\' as file separator on Linux / Mac
+#        # it would also be better to check that a filename is a valid module
+#        # identifier (we have a regex for this in loader.py)
+#        # for invalid filenames should we raise a useful error rather than
+#        # leaving the current error message (import of filename fails) in place?
+#
+#
+#if __name__ == '__main__':
+#    unittest.main()
