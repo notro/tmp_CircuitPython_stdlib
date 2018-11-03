@@ -1,5 +1,5 @@
---- <CPython-3.4.9>/test/support.py
-+++ lib/test/support.py
+--- <CPython-3.4.9>/test/support/__init__.py
++++ lib/test/support/__init__.py
 @@ -1,358 +1,20 @@
  """Supporting definitions for the Python regression tests."""
  

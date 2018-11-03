@@ -143,13 +143,6 @@ class ReTests(unittest.TestCase):
         self.assertEqual(b_escaped, b'y\\\xe2\\\x98\\\xa0y\\\xe2\\\x98\\\xa0y')
 
 
-    def test_bytes_str_mixing(self):
-        # Mixing str and bytes is disallowed
-        pat = re.compile('.')
-        bpat = re.compile(b'.')
-        self.assertRaises(TypeError, pat.match, b'b')
-        self.assertRaises(TypeError, bpat.match, 'b')
-
 
     def test_search_dot_unicode(self):
         self.assertTrue(re.search("123.*-", '123abc-'))
