@@ -1,6 +1,42 @@
 --- <CPython-3.4.9>/unittest/test/test_program.py
 +++ lib/unittest/test/test_program.py
-@@ -76,13 +76,10 @@
+@@ -25,35 +25,6 @@
+         self.assertTrue(self.wasRun)
+         self.assertEqual(suite._tests, tests)
+ 
+-    # Horrible white box test
+-    def testNoExit(self):
+-        result = object()
+-        test = object()
+-
+-        class FakeRunner(object):
+-            def run(self, test):
+-                self.test = test
+-                return result
+-
+-        runner = FakeRunner()
+-
+-        oldParseArgs = unittest.TestProgram.parseArgs
+-        def restoreParseArgs():
+-            unittest.TestProgram.parseArgs = oldParseArgs
+-        unittest.TestProgram.parseArgs = lambda *args: None
+-        self.addCleanup(restoreParseArgs)
+-
+-        def removeTest():
+-            del unittest.TestProgram.test
+-        unittest.TestProgram.test = test
+-        self.addCleanup(removeTest)
+-
+-        program = unittest.TestProgram(testRunner=runner, exit=False, verbosity=2)
+-
+-        self.assertEqual(program.result, result)
+-        self.assertEqual(runner.test, test)
+-        self.assertEqual(program.verbosity, 2)
+-
+     class FooBar(unittest.TestCase):
+         def testPass(self):
+             assert True
+@@ -76,13 +47,10 @@
                  self.test = test
                  return True
  
@@ -14,7 +50,7 @@
          self.assertEqual(('unittest.test',), program.testNames)
  
      def test_defaultTest_with_iterable(self):
-@@ -91,20 +88,16 @@
+@@ -91,20 +59,16 @@
                  self.test = test
                  return True
  
@@ -35,7 +71,7 @@
                                  testRunner=unittest.TextTestRunner(stream=io.StringIO()),
                                  testLoader=self.FooBarLoader())
          self.assertTrue(hasattr(program, 'result'))
-@@ -114,19 +107,11 @@
+@@ -114,19 +78,11 @@
          self.assertRaises(
              SystemExit,
              unittest.main,
@@ -55,7 +91,7 @@
  
  
  class InitialisableProgram(unittest.TestProgram):
-@@ -169,78 +154,8 @@
+@@ -169,78 +125,8 @@
          FakeRunner.raiseError = False
  
      def testVerbosity(self):
@@ -136,7 +172,7 @@
  
      def testRunTestsRunnerClass(self):
          program = self.program
-@@ -291,26 +206,6 @@
+@@ -291,26 +177,6 @@
          self.assertEqual(FakeRunner.initArgs, {})
          self.assertEqual(FakeRunner.test, 'test')
          self.assertIs(program.result, RESULT)
@@ -163,7 +199,7 @@
  
      def _patch_isfile(self, names, exists=True):
          def isfile(path):
-@@ -324,8 +219,9 @@
+@@ -324,8 +190,9 @@
  
      def testParseArgsFileNames(self):
          # running tests with filenames instead of module names
@@ -174,7 +210,7 @@
          self._patch_isfile(argv)
  
          program.createTests = lambda: None
-@@ -338,8 +234,9 @@
+@@ -338,8 +205,9 @@
  
  
      def testParseArgsFilePaths(self):
@@ -185,7 +221,7 @@
          self._patch_isfile(argv)
  
          program.createTests = lambda: None
-@@ -350,8 +247,9 @@
+@@ -350,8 +218,9 @@
  
  
      def testParseArgsNonExistentFiles(self):
@@ -196,7 +232,7 @@
          self._patch_isfile([])
  
          program.createTests = lambda: None
-@@ -361,10 +259,11 @@
+@@ -361,10 +230,11 @@
  
      def testParseArgsAbsolutePathsThatCanBeConverted(self):
          cur_dir = os.getcwd()
@@ -209,20 +245,29 @@
          self._patch_isfile(argv)
  
          program.createTests = lambda: None
-@@ -374,9 +273,10 @@
+@@ -373,24 +243,4 @@
+         expected = ['foo.bar.baz', 'green.red']
          self.assertEqual(program.testNames, expected)
  
-     def testParseArgsAbsolutePathsThatCannotBeConverted(self):
+-    def testParseArgsAbsolutePathsThatCannotBeConverted(self):
 -        program = self.program
-+        program = unittest.TestProgram(tests=None)                              ###
-         # even on Windows '/...' is considered absolute by os.path.abspath
-         argv = ['progname', '/foo/bar/baz.py', '/green/red.py']
-+        program.tests = argv[1:]                                                ###
-         self._patch_isfile(argv)
- 
-         program.createTests = lambda: None
-@@ -394,3 +294,4 @@
- 
- if __name__ == '__main__':
-     unittest.main()
+-        # even on Windows '/...' is considered absolute by os.path.abspath
+-        argv = ['progname', '/foo/bar/baz.py', '/green/red.py']
+-        self._patch_isfile(argv)
+-
+-        program.createTests = lambda: None
+-        program.parseArgs(argv)
+-
+-        self.assertEqual(program.testNames, argv[1:])
+-
+-        # it may be better to use platform specific functions to normalise paths
+-        # rather than accepting '.PY' and '\' as file separator on Linux / Mac
+-        # it would also be better to check that a filename is a valid module
+-        # identifier (we have a regex for this in loader.py)
+-        # for invalid filenames should we raise a useful error rather than
+-        # leaving the current error message (import of filename fails) in place?
+-
+-
+-if __name__ == '__main__':
+-    unittest.main()
 +

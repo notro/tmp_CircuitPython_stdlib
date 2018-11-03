@@ -413,10 +413,42 @@ class TestCase(object):
                           RuntimeWarning, 2)
             result.addSuccess(test_case)
 
+    @contextlib.contextmanager
+    def subTest(self, msg=None, **params):
+        """Return a context manager that will return the enclosed block
+        of code in a subtest identified by the optional message and
+        keyword parameters.  A failure in the subtest marks the test
+        case as failed but resumes execution at the end of the enclosed
+        block, allowing further test code to be executed.
+        """
+        if not self._outcome.result_supports_subtests:
+            yield
+            return
+        parent = self._subtest
+        if parent is None:
+            params_map = ChainMap(params)                                       ###
+        else:
+            params_map = parent.params.new_child(params)
+        self._subtest = _SubTest(self, msg, params_map)
+        try:
+            with self._outcome.testPartExecutor(self._subtest, isTest=True):
+                yield
+            if not self._outcome.success:
+                result = self._outcome.result
+                if result is not None and result.failfast:
+                    raise _ShouldStop
+            elif self._outcome.expectedFailure:
+                # If the test is expecting a failure, we really want to
+                # stop now and register the expected failure.
+                raise _ShouldStop
+        finally:
+            self._subtest = parent
 
     def _feedErrorsToResult(self, result, errors):
         for test, exc_info in errors:
-            if exc_info is not None:                                            ###
+            if isinstance(test, _SubTest):
+                result.addSubTest(test.test_case, test, exc_info)
+            elif exc_info is not None:
                 if issubclass(exc_info[0], self.failureException):
                     result.addFailure(test, exc_info)
                 else:
@@ -1129,3 +1161,58 @@ class FunctionTestCase(TestCase):
         return doc and doc.split("\n")[0].strip() or None
 
 
+class _SubTest(TestCase):
+
+    def __init__(self, test_case, message, params):
+        super().__init__()
+        self._message = message
+        self.test_case = test_case
+        self.params = params
+        self.failureException = test_case.failureException
+
+    def runTest(self):
+        raise NotImplementedError("subtests cannot be run directly")
+
+    def _subDescription(self):
+        parts = []
+        if self._message:
+            parts.append("[{}]".format(self._message))
+        if self.params:
+            params_desc = ', '.join(
+                "{}={!r}".format(k, v)
+                for (k, v) in sorted(self.params.items()))
+            parts.append("({})".format(params_desc))
+        return " ".join(parts) or '(<subtest>)'
+
+    def id(self):
+        return "{} {}".format(self.test_case.id(), self._subDescription())
+
+    def shortDescription(self):
+        """Returns a one-line description of the subtest, or None if no
+        description has been provided.
+        """
+        return self.test_case.shortDescription()
+
+    def __str__(self):
+        return "{} {}".format(self.test_case, self._subDescription())
+                                                                                ###
+# Until collections gets ChainMap:                                              ###
+class ChainMap(dict):                                                           ###
+    def __init__(self, *maps):                                                  ###
+        self.maps = list(maps) or [{}]                                          ###
+                                                                                ###
+    def items(self):                                                            ###
+        for m in self.maps:                                                     ###
+            for k, v in m.items():                                              ###
+                yield k, v                                                      ###
+                                                                                ###
+    def new_child(self, m=None):                                                ###
+        if m is None:                                                           ###
+            m = {}                                                              ###
+        tmp = ChainMap(m)                                                       ###
+        tmp.maps.extend(self.maps)                                              ###
+        return tmp                                                              ###
+                                                                                ###
+    @property                                                                   ###
+    def parents(self):                                                          ###
+        return self.__class__(*self.maps[1:])                                   ###

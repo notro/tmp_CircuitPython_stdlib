@@ -32,43 +32,10 @@
  
  
  class Test(object):
-@@ -305,125 +294,6 @@
+@@ -338,15 +327,6 @@
+                     'addSubTestSuccess', 'addError', 'stopTest']
+         self._check_call_order__subtests(result, events, expected)
  
-         Foo('test').run()
- 
--    def _check_call_order__subtests(self, result, events, expected_events):
--        class Foo(Test.LoggingTestCase):
--            def test(self):
--                super(Foo, self).test()
--                for i in [1, 2, 3]:
--                    with self.subTest(i=i):
--                        if i == 1:
--                            self.fail('failure')
--                        for j in [2, 3]:
--                            with self.subTest(j=j):
--                                if i * j == 6:
--                                    raise RuntimeError('raised by Foo.test')
--                1 / 0
--
--        # Order is the following:
--        # i=1 => subtest failure
--        # i=2, j=2 => subtest success
--        # i=2, j=3 => subtest error
--        # i=3, j=2 => subtest error
--        # i=3, j=3 => subtest success
--        # toplevel => error
--        Foo(events).run(result)
--        self.assertEqual(events, expected_events)
--
--    def test_run_call_order__subtests(self):
--        events = []
--        result = LoggingResult(events)
--        expected = ['startTest', 'setUp', 'test', 'tearDown',
--                    'addSubTestFailure', 'addSubTestSuccess',
--                    'addSubTestFailure', 'addSubTestFailure',
--                    'addSubTestSuccess', 'addError', 'stopTest']
--        self._check_call_order__subtests(result, events, expected)
--
 -    def test_run_call_order__subtests_legacy(self):
 -        # With a legacy result object (without a addSubTest method),
 -        # text execution stops after the first subtest failure.
@@ -78,29 +45,13 @@
 -                    'addFailure', 'stopTest']
 -        self._check_call_order__subtests(result, events, expected)
 -
--    def _check_call_order__subtests_success(self, result, events, expected_events):
--        class Foo(Test.LoggingTestCase):
--            def test(self):
--                super(Foo, self).test()
--                for i in [1, 2]:
--                    with self.subTest(i=i):
--                        for j in [2, 3]:
--                            with self.subTest(j=j):
--                                pass
--
--        Foo(events).run(result)
--        self.assertEqual(events, expected_events)
--
--    def test_run_call_order__subtests_success(self):
--        events = []
--        result = LoggingResult(events)
--        # The 6 subtest successes are individually recorded, in addition
--        # to the whole test success.
--        expected = (['startTest', 'setUp', 'test', 'tearDown']
--                    + 6 * ['addSubTestSuccess']
--                    + ['addSuccess', 'stopTest'])
--        self._check_call_order__subtests_success(result, events, expected)
--
+     def _check_call_order__subtests_success(self, result, events, expected_events):
+         class Foo(Test.LoggingTestCase):
+             def test(self):
+@@ -370,14 +350,6 @@
+                     + ['addSuccess', 'stopTest'])
+         self._check_call_order__subtests_success(result, events, expected)
+ 
 -    def test_run_call_order__subtests_success_legacy(self):
 -        # With a legacy result, only the whole test success is recorded.
 -        events = []
@@ -109,56 +60,10 @@
 -                    'addSuccess', 'stopTest']
 -        self._check_call_order__subtests_success(result, events, expected)
 -
--    def test_run_call_order__subtests_failfast(self):
--        events = []
--        result = LoggingResult(events)
--        result.failfast = True
--
--        class Foo(Test.LoggingTestCase):
--            def test(self):
--                super(Foo, self).test()
--                with self.subTest(i=1):
--                    self.fail('failure')
--                with self.subTest(i=2):
--                    self.fail('failure')
--                self.fail('failure')
--
--        expected = ['startTest', 'setUp', 'test', 'tearDown',
--                    'addSubTestFailure', 'stopTest']
--        Foo(events).run(result)
--        self.assertEqual(events, expected)
--
--    def test_subtests_failfast(self):
--        # Ensure proper test flow with subtests and failfast (issue #22894)
--        events = []
--
--        class Foo(unittest.TestCase):
--            def test_a(self):
--                with self.subTest():
--                    events.append('a1')
--                events.append('a2')
--
--            def test_b(self):
--                with self.subTest():
--                    events.append('b1')
--                with self.subTest():
--                    self.fail('failure')
--                events.append('b2')
--
--            def test_c(self):
--                events.append('c')
--
--        result = unittest.TestResult()
--        result.failfast = True
--        suite = unittest.makeSuite(Foo)
--        suite.run(result)
--
--        expected = ['a1', 'a2', 'b1']
--        self.assertEqual(events, expected)
- 
-     # "This class attribute gives the exception raised by the test() method.
-     # If a test framework needs to use a specialized exception, possibly to
-@@ -574,27 +444,6 @@
+     def test_run_call_order__subtests_failfast(self):
+         events = []
+         result = LoggingResult(events)
+@@ -574,27 +546,6 @@
      def testShortDescriptionWithoutDocstring(self):
          self.assertIsNone(self.shortDescription())
  
@@ -186,7 +91,7 @@
  
      def testAddTypeEqualityFunc(self):
          class SadSnake(object):
-@@ -652,35 +501,7 @@
+@@ -652,35 +603,7 @@
          self.assertRaises(self.failureException, self.assertNotIn, 'cow',
                            animals)
  
@@ -223,7 +128,7 @@
  
      def testAssertEqual(self):
          equal_pairs = [
-@@ -753,63 +574,7 @@
+@@ -753,63 +676,7 @@
          self.assertRaises(self.failureException, self.assertSequenceEqual,
                            1, 1)
  
@@ -288,7 +193,7 @@
  
      def testTruncateMessage(self):
          self.maxDiff = 1
-@@ -825,17 +590,6 @@
+@@ -825,17 +692,6 @@
          message = self._truncateMessage('foo', 'bar')
          self.assertEqual(message, 'foobar')
  
@@ -306,7 +211,7 @@
  
      def testAssertMultiLineEqualTruncates(self):
          test = unittest.TestCase('assertEqual')
-@@ -914,67 +668,7 @@
+@@ -914,67 +770,7 @@
          d = 'y' * 40 + '[56 chars]yyyy'
          self.assertEqual(str(cm.exception), "'%sa%s' != '%sb%s'" % (c, d, c, d))
  
@@ -375,7 +280,7 @@
  
      def testAssertSetEqual(self):
          set1 = set()
-@@ -1142,8 +836,6 @@
+@@ -1142,8 +938,6 @@
          self.assertRaises(ExceptionMock, Stub)
          # A tuple of exception classes is accepted
          self.assertRaises((ValueError, ExceptionMock), Stub)
@@ -384,7 +289,7 @@
          # Failure when no exception is raised
          with self.assertRaises(self.failureException):
              self.assertRaises(ExceptionMock, lambda: 0)
-@@ -1164,9 +856,6 @@
+@@ -1164,9 +958,6 @@
          # The context manager exposes caught exception
          self.assertIsInstance(cm.exception, ExceptionMock)
          self.assertEqual(cm.exception.args[0], 'We expect')
@@ -394,7 +299,7 @@
          # Failure when no exception is raised
          with self.assertRaises(self.failureException):
              with self.assertRaises(ExceptionMock):
-@@ -1195,335 +884,6 @@
+@@ -1195,335 +986,6 @@
                  self.assertRaisesRegex, Exception, 'x',
                  lambda: None)
  
@@ -730,7 +635,7 @@
  
      def testKeyboardInterrupt(self):
          def _raise(self=None):
-@@ -1604,40 +964,4 @@
+@@ -1604,40 +1066,4 @@
              self.assertEqual(len(result.errors), 1)
              self.assertEqual(result.testsRun, 1)
  

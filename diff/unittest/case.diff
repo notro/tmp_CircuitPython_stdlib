@@ -163,51 +163,16 @@
  
          return self._testMethodName == other._testMethodName
  
-@@ -476,42 +413,10 @@
-                           RuntimeWarning, 2)
-             result.addSuccess(test_case)
- 
--    @contextlib.contextmanager
--    def subTest(self, msg=None, **params):
--        """Return a context manager that will return the enclosed block
--        of code in a subtest identified by the optional message and
--        keyword parameters.  A failure in the subtest marks the test
--        case as failed but resumes execution at the end of the enclosed
--        block, allowing further test code to be executed.
--        """
--        if not self._outcome.result_supports_subtests:
--            yield
--            return
--        parent = self._subtest
--        if parent is None:
+@@ -489,7 +426,7 @@
+             return
+         parent = self._subtest
+         if parent is None:
 -            params_map = collections.ChainMap(params)
--        else:
--            params_map = parent.params.new_child(params)
--        self._subtest = _SubTest(self, msg, params_map)
--        try:
--            with self._outcome.testPartExecutor(self._subtest, isTest=True):
--                yield
--            if not self._outcome.success:
--                result = self._outcome.result
--                if result is not None and result.failfast:
--                    raise _ShouldStop
--            elif self._outcome.expectedFailure:
--                # If the test is expecting a failure, we really want to
--                # stop now and register the expected failure.
--                raise _ShouldStop
--        finally:
--            self._subtest = parent
- 
-     def _feedErrorsToResult(self, result, errors):
-         for test, exc_info in errors:
--            if isinstance(test, _SubTest):
--                result.addSubTest(test.test_case, test, exc_info)
--            elif exc_info is not None:
-+            if exc_info is not None:                                            ###
-                 if issubclass(exc_info[0], self.failureException):
-                     result.addFailure(test, exc_info)
-                 else:
-@@ -554,18 +459,19 @@
++            params_map = ChainMap(params)                                       ###
+         else:
+             params_map = parent.params.new_child(params)
+         self._subtest = _SubTest(self, msg, params_map)
+@@ -554,18 +491,19 @@
  
          testMethod = getattr(self, self._testMethodName)
          if (getattr(self.__class__, "__unittest_skip__", False) or
@@ -230,7 +195,7 @@
                                            "__unittest_expecting_failure__", False)
          expecting_failure = expecting_failure_class or expecting_failure_method
          outcome = _Outcome(result)
-@@ -706,58 +612,6 @@
+@@ -706,58 +644,6 @@
          context = _AssertRaisesContext(excClass, self, callableObj)
          return context.handle('assertRaises', callableObj, args, kwargs)
  
@@ -289,7 +254,7 @@
  
      def _getAssertEqualityFunc(self, first, second):
          """Get a detailed comparison function for the types of the two args.
-@@ -836,10 +690,15 @@
+@@ -836,10 +722,15 @@
                                                          safe_repr(delta))
          else:
              if places is None:
@@ -309,7 +274,7 @@
  
              standardMsg = '%s != %s within %r places' % (safe_repr(first),
                                                            safe_repr(second),
-@@ -869,9 +728,14 @@
+@@ -869,9 +760,14 @@
                                                          safe_repr(delta))
          else:
              if places is None:
@@ -327,7 +292,7 @@
              standardMsg = '%s == %s within %r places' % (safe_repr(first),
                                                           safe_repr(second),
                                                           places)
-@@ -924,7 +788,7 @@
+@@ -924,7 +820,7 @@
                  return
  
              differing = '%ss differ: %s != %s\n' % (
@@ -336,7 +301,7 @@
                      _common_shorten_repr(seq1, seq2))
  
              for i in range(min(len1, len2)):
-@@ -972,8 +836,8 @@
+@@ -972,8 +868,8 @@
                                    'of second %s\n' % (len1, seq_type_name))
          standardMsg = differing
          diffMsg = '\n' + '\n'.join(
@@ -347,7 +312,7 @@
  
          standardMsg = self._truncateMessage(standardMsg, diffMsg)
          msg = self._formatMessage(msg, standardMsg)
-@@ -1085,72 +949,11 @@
+@@ -1085,72 +981,11 @@
          if d1 != d2:
              standardMsg = '%s != %s' % _common_shorten_repr(d1, d2)
              diff = ('\n' + '\n'.join(difflib.ndiff(
@@ -422,7 +387,7 @@
  
      def assertMultiLineEqual(self, first, second, msg=None):
          """Assert that two multi-line strings are equal."""
-@@ -1240,26 +1043,6 @@
+@@ -1240,26 +1075,6 @@
  
          return context.handle('assertRaisesRegex', callable_obj, args, kwargs)
  
@@ -449,7 +414,7 @@
  
      def assertRegex(self, text, expected_regex, msg=None):
          """Fail the test unless the text matches the regular expression."""
-@@ -1268,7 +1051,7 @@
+@@ -1268,7 +1083,7 @@
              expected_regex = re.compile(expected_regex)
          if not expected_regex.search(text):
              msg = msg or "Regex didn't match"
@@ -458,7 +423,7 @@
              raise self.failureException(msg)
  
      def assertNotRegex(self, text, unexpected_regex, msg=None):
-@@ -1280,29 +1063,11 @@
+@@ -1280,29 +1095,11 @@
              msg = msg or "Regex matched"
              msg = '%s: %r matches %r in %r' % (msg,
                                                 text[match.start():match.end()],
@@ -489,7 +454,7 @@
  
  
  
-@@ -1360,41 +1125,8 @@
+@@ -1360,7 +1157,7 @@
      def shortDescription(self):
          if self._description is not None:
              return self._description
@@ -498,38 +463,29 @@
          return doc and doc.split("\n")[0].strip() or None
  
  
--class _SubTest(TestCase):
--
--    def __init__(self, test_case, message, params):
--        super().__init__()
--        self._message = message
--        self.test_case = test_case
--        self.params = params
--        self.failureException = test_case.failureException
--
--    def runTest(self):
--        raise NotImplementedError("subtests cannot be run directly")
--
--    def _subDescription(self):
--        parts = []
--        if self._message:
--            parts.append("[{}]".format(self._message))
--        if self.params:
--            params_desc = ', '.join(
--                "{}={!r}".format(k, v)
--                for (k, v) in sorted(self.params.items()))
--            parts.append("({})".format(params_desc))
--        return " ".join(parts) or '(<subtest>)'
--
--    def id(self):
--        return "{} {}".format(self.test_case.id(), self._subDescription())
--
--    def shortDescription(self):
--        """Returns a one-line description of the subtest, or None if no
--        description has been provided.
--        """
--        return self.test_case.shortDescription()
--
--    def __str__(self):
--        return "{} {}".format(self.test_case, self._subDescription())
+@@ -1398,3 +1195,25 @@
+ 
+     def __str__(self):
+         return "{} {}".format(self.test_case, self._subDescription())
++                                                                                ###
++# Until collections gets ChainMap:                                              ###
++class ChainMap(dict):                                                           ###
++    def __init__(self, *maps):                                                  ###
++        self.maps = list(maps) or [{}]                                          ###
++                                                                                ###
++    def items(self):                                                            ###
++        for m in self.maps:                                                     ###
++            for k, v in m.items():                                              ###
++                yield k, v                                                      ###
++                                                                                ###
++    def new_child(self, m=None):                                                ###
++        if m is None:                                                           ###
++            m = {}                                                              ###
++        tmp = ChainMap(m)                                                       ###
++        tmp.maps.extend(self.maps)                                              ###
++        return tmp                                                              ###
++                                                                                ###
++    @property                                                                   ###
++    def parents(self):                                                          ###
++        return self.__class__(*self.maps[1:])                                   ###
 +

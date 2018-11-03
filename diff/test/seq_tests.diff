@@ -1,0 +1,133 @@
+--- <CPython-3.4.9>/test/seq_tests.py
++++ lib/test/seq_tests.py
+@@ -4,7 +4,6 @@
+ 
+ import unittest
+ import sys
+-import pickle
+ 
+ # Various iterables
+ # This is used for checking the constructor (here and in test_deque.py)
+@@ -155,23 +154,12 @@
+         for i in range(-len(u), -1):
+             self.assertEqual(u[i], len(u)+i)
+             self.assertEqual(u[int(i)], len(u)+i)
+-        self.assertRaises(IndexError, u.__getitem__, -len(u)-1)
+-        self.assertRaises(IndexError, u.__getitem__, len(u))
+-        self.assertRaises(ValueError, u.__getitem__, slice(0,10,0))
+-
+-        u = self.type2test()
+-        self.assertRaises(IndexError, u.__getitem__, 0)
+-        self.assertRaises(IndexError, u.__getitem__, -1)
+-
+-        self.assertRaises(TypeError, u.__getitem__)
+ 
+         a = self.type2test([10, 11])
+         self.assertEqual(a[0], 10)
+         self.assertEqual(a[1], 11)
+         self.assertEqual(a[-2], 10)
+         self.assertEqual(a[-1], 11)
+-        self.assertRaises(IndexError, a.__getitem__, -3)
+-        self.assertRaises(IndexError, a.__getitem__, 3)
+ 
+     def test_getslice(self):
+         l = [0, 1, 2, 3, 4]
+@@ -204,20 +192,6 @@
+         self.assertEqual(u[-100:100:-1], self.type2test([]))
+         self.assertEqual(u[-100:100:2], self.type2test([0, 2, 4]))
+ 
+-        # Test extreme cases with long ints
+-        a = self.type2test([0,1,2,3,4])
+-        self.assertEqual(a[ -pow(2,128): 3 ], self.type2test([0,1,2]))
+-        self.assertEqual(a[ 3: pow(2,145) ], self.type2test([3,4]))
+-
+-    def test_contains(self):
+-        u = self.type2test([0, 1, 2])
+-        for i in u:
+-            self.assertIn(i, u)
+-        for i in min(u)-1, max(u)+1:
+-            self.assertNotIn(i, u)
+-
+-        self.assertRaises(TypeError, u.__contains__)
+-
+     def test_contains_fake(self):
+         class AllEq:
+             # Sequences must use rich comparison against each item
+@@ -228,21 +202,6 @@
+             __hash__ = None # Can't meet hash invariant requirements
+         self.assertNotIn(AllEq(), self.type2test([]))
+         self.assertIn(AllEq(), self.type2test([1]))
+-
+-    def test_contains_order(self):
+-        # Sequences must test in-order.  If a rich comparison has side
+-        # effects, these will be visible to tests against later members.
+-        # In this test, the "side effect" is a short-circuiting raise.
+-        class DoNotTestEq(Exception):
+-            pass
+-        class StopCompares:
+-            def __eq__(self, other):
+-                raise DoNotTestEq
+-
+-        checkfirst = self.type2test([1, StopCompares()])
+-        self.assertIn(1, checkfirst)
+-        checklast = self.type2test([StopCompares(), 1])
+-        self.assertRaises(DoNotTestEq, checklast.__contains__, 1)
+ 
+     def test_len(self):
+         self.assertEqual(len(self.type2test()), 0)
+@@ -296,11 +255,6 @@
+         u += self.type2test("eggs")
+         self.assertEqual(u, self.type2test("spameggs"))
+ 
+-    def test_imul(self):
+-        u = self.type2test([0, 1])
+-        u *= 3
+-        self.assertEqual(u, self.type2test([0, 1, 0, 1, 0, 1]))
+-
+     def test_getitemoverwriteiter(self):
+         # Verify that __getitem__ overrides are not recognized by __iter__
+         class T(self.type2test):
+@@ -314,32 +268,6 @@
+             for n in range(-3, 5):
+                 self.assertEqual(self.type2test(s*n), self.type2test(s)*n)
+             self.assertEqual(self.type2test(s)*(-4), self.type2test([]))
+-            self.assertEqual(id(s), id(s*1))
+-
+-    def test_bigrepeat(self):
+-        import sys
+-        if sys.maxsize <= 2147483647:
+-            x = self.type2test([0])
+-            x *= 2**16
+-            self.assertRaises(MemoryError, x.__mul__, 2**16)
+-            if hasattr(x, '__imul__'):
+-                self.assertRaises(MemoryError, x.__imul__, 2**16)
+-
+-    def test_subscript(self):
+-        a = self.type2test([10, 11])
+-        self.assertEqual(a.__getitem__(0), 10)
+-        self.assertEqual(a.__getitem__(1), 11)
+-        self.assertEqual(a.__getitem__(-2), 10)
+-        self.assertEqual(a.__getitem__(-1), 11)
+-        self.assertRaises(IndexError, a.__getitem__, -3)
+-        self.assertRaises(IndexError, a.__getitem__, 3)
+-        self.assertEqual(a.__getitem__(slice(0,1)), self.type2test([10]))
+-        self.assertEqual(a.__getitem__(slice(1,2)), self.type2test([11]))
+-        self.assertEqual(a.__getitem__(slice(0,2)), self.type2test([10, 11]))
+-        self.assertEqual(a.__getitem__(slice(0,3)), self.type2test([10, 11]))
+-        self.assertEqual(a.__getitem__(slice(3,5)), self.type2test([]))
+-        self.assertRaises(ValueError, a.__getitem__, slice(0, 10, 0))
+-        self.assertRaises(TypeError, a.__getitem__, 'x')
+ 
+     def test_count(self):
+         a = self.type2test([0, 1, 2])*3
+@@ -402,9 +330,4 @@
+         self.assertRaises(ValueError, a.index, 0, 4*sys.maxsize,-4*sys.maxsize)
+         self.assertRaises(ValueError, a.index, 2, 0, -10)
+ 
+-    def test_pickle(self):
+-        lst = self.type2test([4, 5, 6, 7])
+-        for proto in range(pickle.HIGHEST_PROTOCOL + 1):
+-            lst2 = pickle.loads(pickle.dumps(lst, proto))
+-            self.assertEqual(lst2, lst)
+-            self.assertNotEqual(id(lst2), id(lst))
++

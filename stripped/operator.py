@@ -26,6 +26,22 @@ def pow(a, b):
     "Same as a ** b."
     return a ** b
 
+def countOf(a, b):
+    "Return the number of times b occurs in a."
+    count = 0
+    for i in a:
+        if i == b:
+            count += 1
+    return count
+
+def indexOf(a, b):
+    "Return the first index of b in a."
+    for i, j in enumerate(a):
+        if j == b:
+            return i
+    else:
+        raise ValueError('sequence.index(x): x not in sequence')
+
 
 # Generalized Lookup Objects **************************************************#
 
