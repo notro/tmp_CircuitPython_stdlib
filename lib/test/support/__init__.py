@@ -895,6 +895,7 @@ def temp_dir(path=None, quiet=False):
     """
     dir_created = False
     if path is None:
+        import tempfile                                                         ### Don't burden everyone with this import
         path = tempfile.mkdtemp()
         dir_created = True
         path = os.path.realpath(path)
