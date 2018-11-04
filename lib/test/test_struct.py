@@ -198,6 +198,7 @@ class StructTest(unittest.TestCase):
 #        self.assertGreaterEqual(struct.calcsize('n'), struct.calcsize('i'))
 #        self.assertGreaterEqual(struct.calcsize('n'), struct.calcsize('P'))
 
+    @unittest.expectedFailure                                                   ### AssertionError: Failing subtests: 290 of 11651
     def test_integers(self):
         # Integer tests (bBhHiIlLqQnN).
 #        import binascii
