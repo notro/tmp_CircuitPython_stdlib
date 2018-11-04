@@ -1,6 +1,6 @@
 --- <CPython-3.4.9>/test/support/__init__.py
 +++ lib/test/support/__init__.py
-@@ -1,358 +1,20 @@
+@@ -1,358 +1,21 @@
  """Supporting definitions for the Python regression tests."""
  
 -if __name__ != 'test.support':
@@ -276,7 +276,7 @@
 -    else:
 -        return attribute
 -
--verbose = 1              # Flag set to 0 by regrtest.py
+ verbose = 1              # Flag set to 0 by regrtest.py
 -use_resources = None     # Flag set to [] by regrtest.py
 -max_memuse = 0           # Disable bigmem tests (they will still be run with
 -                         # small sizes, to make sure they work.)
@@ -363,7 +363,7 @@
      _unlink = os.unlink
      _rmdir = os.rmdir
      _rmtree = shutil.rmtree
-@@ -360,391 +22,22 @@
+@@ -360,391 +23,22 @@
  def unlink(filename):
      try:
          _unlink(filename)
@@ -761,7 +761,7 @@
  
  # FS_NONASCII: non-ASCII character encodable by os.fsencode(),
  # or None if there is no such character.
-@@ -792,46 +85,12 @@
+@@ -792,46 +86,12 @@
  
  # TESTFN_UNICODE is a non-ascii filename
  TESTFN_UNICODE = TESTFN + "-\xe0\xf2\u0258\u0141\u011f"
@@ -809,7 +809,15 @@
  
  # TESTFN_UNDECODABLE is a filename (bytes type) that should *not* be able to be
  # decoded from the filesystem encoding (in strict mode). It can be None if we
-@@ -951,1037 +210,6 @@
+@@ -887,6 +147,7 @@
+     """
+     dir_created = False
+     if path is None:
++        import tempfile                                                         ### Don't burden everyone with this import
+         path = tempfile.mkdtemp()
+         dir_created = True
+         path = os.path.realpath(path)
+@@ -951,1037 +212,6 @@
          with change_cwd(temp_path, quiet=quiet) as cwd_dir:
              yield cwd_dir
  
@@ -1847,7 +1855,7 @@
  @contextlib.contextmanager
  def swap_attr(obj, attr, new_val):
      """Temporary swap out an attribute with a new object.
-@@ -2036,228 +264,9 @@
+@@ -2036,228 +266,9 @@
          finally:
              del obj[item]
  
@@ -2077,7 +2085,7 @@
      # check that 'attr_name' is a real attribute for 'object_to_patch'
      # will raise AttributeError if it does not exist
      getattr(object_to_patch, attr_name)
-@@ -2273,10 +282,7 @@
+@@ -2273,10 +284,7 @@
  
      # restore the value when the test is done
      def cleanup():
@@ -2088,7 +2096,7 @@
  
      test_instance.addCleanup(cleanup)
  
-@@ -2284,21 +290,4 @@
+@@ -2284,21 +292,4 @@
      setattr(object_to_patch, attr_name, new_value)
  
  

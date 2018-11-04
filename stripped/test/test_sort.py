@@ -1,0 +1,220 @@
+from test import support
+import sys
+import unittest
+from functools import cmp_to_key
+
+verbose = support.verbose
+nerrors = 0
+
+
+def check(tag, expected, raw, compare=None):
+    global nerrors
+
+    if verbose:
+        print("    checking", tag)
+
+    orig = raw[:]   # save input in case of error
+    if compare:
+        raw.sort(key=cmp_to_key(compare))
+    else:
+        raw.sort()
+
+    if len(expected) != len(raw):
+        print("error in", tag)
+        print("length mismatch;", len(expected), len(raw))
+        print(expected)
+        print(orig)
+        print(raw)
+        nerrors += 1
+        return
+
+    for i, good in enumerate(expected):
+        maybe = raw[i]
+        if good is not maybe:
+            print("error in", tag)
+            print("out of order at index", i, good, maybe)
+            print(expected)
+            print(orig)
+            print(raw)
+            nerrors += 1
+            return
+
+class TestBase(unittest.TestCase):
+    def testStressfully(self):
+        # Try a variety of sizes at and around powers of 2, and at powers of 10.
+        sizes = [0]
+        for power in range(1, 5):                                               ###
+            n = 2 ** power
+            sizes.extend(range(n-1, n+2))
+        sizes.extend([10, 100])                                                 ###
+
+        class Complains(object):
+            maybe_complain = True
+
+            def __init__(self, i):
+                self.i = i
+
+            def __lt__(self, other):
+                if Complains.maybe_complain and random.random() < 0.001:
+                    if verbose:
+                        print("        complaining at", self, other)
+                    raise RuntimeError
+                return self.i < other.i
+
+            def __repr__(self):
+                return "Complains(%d)" % self.i
+
+        class Stable(object):
+            def __init__(self, key, i):
+                self.key = key
+                self.index = i
+
+            def __lt__(self, other):
+                return self.key < other.key
+
+            def __repr__(self):
+                return "Stable(%d, %d)" % (self.key, self.index)
+
+        for n in sizes:
+            x = list(range(n))
+            if verbose:
+                print("Testing size", n)
+
+            s = x[:]
+            check("identity", x, s)
+
+            s = x[:]
+            s.reverse()
+            check("reversed", x, s)
+
+            s = x[:]
+            random.shuffle(s)
+            check("random permutation", x, s)
+
+            y = x[:]
+            y.reverse()
+            s = x[:]
+            check("reversed via function", y, s, lambda a, b: (b>a)-(b<a))
+
+            if verbose:
+                print("    Checking against an insane comparison function.")
+                print("        If the implementation isn't careful, this may segfault.")
+            s = x[:]
+            s.sort(key=cmp_to_key(lambda a, b:  int(random.random() * 3) - 1))
+            check("an insane function left some permutation", x, s)
+
+            if len(x) >= 2:
+                def bad_key(x):
+                    raise RuntimeError
+                s = x[:]
+                self.assertRaises(RuntimeError, s.sort, key=bad_key)
+
+            x = [Complains(i) for i in x]
+            s = x[:]
+            random.shuffle(s)
+            Complains.maybe_complain = True
+            it_complained = False
+            try:
+                s.sort()
+            except RuntimeError:
+                it_complained = True
+            if it_complained:
+                Complains.maybe_complain = False
+                check("exception during sort left some permutation", x, s)
+
+
+
+#==============================================================================
+
+class TestDecorateSortUndecorate(unittest.TestCase):
+
+    def test_decorated(self):
+        data = 'The quick Brown fox Jumped over The lazy Dog'.split()
+        copy = data[:]
+        random.shuffle(data)
+        data.sort(key=str.lower)
+        def my_cmp(x, y):
+            xlower, ylower = x.lower(), y.lower()
+            return (xlower > ylower) - (xlower < ylower)
+        copy.sort(key=cmp_to_key(my_cmp))
+
+    def test_baddecorator(self):
+        data = 'The quick Brown fox Jumped over The lazy Dog'.split()
+        self.assertRaises(TypeError, data.sort, key=lambda x,y: 0)
+
+    def test_key_with_exception(self):
+        # Verify that the wrapper has been removed
+        data = list(range(-2, 2))
+        dup = data[:]
+        self.assertRaises(ZeroDivisionError, data.sort, key=lambda x: 1/x)
+        self.assertEqual(data, dup)
+
+    def test_key_with_mutating_del_and_exception(self):
+        data = list(range(10))
+        ## dup = data[:]
+        class SortKiller(object):
+            def __init__(self, x):
+                if x > 2:
+                    raise RuntimeError
+            def __del__(self):
+                del data[:]
+                data[:] = list(range(20))
+        self.assertRaises(RuntimeError, data.sort, key=SortKiller)
+        ## major honking subtlety: we *can't* do:
+        ##
+        ## self.assertEqual(data, dup)
+        ##
+        ## because there is a reference to a SortKiller in the
+        ## traceback and by the time it dies we're outside the call to
+        ## .sort() and so the list protection gimmicks are out of
+        ## date (this cost some brain cells to figure out...).
+
+    def test_reverse(self):
+        data = list(range(100))
+        random.shuffle(data)
+        data.sort(reverse=True)
+        self.assertEqual(data, list(range(99,-1,-1)))
+
+    def test_reverse_stability(self):
+        data = [(random.randrange(100), i) for i in range(200)]
+        copy1 = data[:]
+        copy2 = data[:]
+        def my_cmp(x, y):
+            x0, y0 = x[0], y[0]
+            return (x0 > y0) - (x0 < y0)
+        def my_cmp_reversed(x, y):
+            x0, y0 = x[0], y[0]
+            return (y0 > x0) - (y0 < x0)
+        data.sort(key=cmp_to_key(my_cmp), reverse=True)
+        copy1.sort(key=cmp_to_key(my_cmp_reversed))
+        copy2.sort(key=lambda x: x[0], reverse=True)
+        self.assertEqual(data, copy2)
+
+#==============================================================================
+# Until random gets shuffle:                                                    ###
+import random as _random                                                        ###
+                                                                                ###
+BPF = 23                                                                        ###
+                                                                                ###
+class Random:                                                                   ###
+    def _randbelow_without_getrandbits(self, n, int=int, maxsize=1<<BPF):       ###
+        rem = maxsize % n                                                       ###
+        limit = (maxsize - rem) / maxsize                                       ###
+        r = _random.random()                                                    ###
+        while r >= limit:                                                       ###
+            r = _random.random()                                                ###
+        return int(r*maxsize) % n                                               ###
+                                                                                ###
+    def shuffle(self, x):                                                       ###
+        randbelow = self._randbelow_without_getrandbits                         ###
+        for i in reversed(range(1, len(x))):                                    ###
+            j = randbelow(i+1)                                                  ###
+            x[i], x[j] = x[j], x[i]                                             ###
+                                                                                ###
+_inst = Random()                                                                ###
+class random:                                                                   ###
+    random = _random.random                                                     ###
+    def randrange(stop):                                                        ###
+        return _random.randrange(stop)                                          ###
+    shuffle = _inst.shuffle                                                     ###
+

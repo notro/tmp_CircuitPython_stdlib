@@ -14,6 +14,7 @@ def import_module(name, deprecated=False, *, required_on=()):
             raise unittest.SkipTest(str(msg))
 
 
+verbose = 1              # Flag set to 0 by regrtest.py
 if True:                                                                        ###
     _unlink = os.unlink
     _rmdir = os.rmdir
@@ -146,6 +147,7 @@ def temp_dir(path=None, quiet=False):
     """
     dir_created = False
     if path is None:
+        import tempfile                                                         ### Don't burden everyone with this import
         path = tempfile.mkdtemp()
         dir_created = True
         path = os.path.realpath(path)

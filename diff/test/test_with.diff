@@ -1,0 +1,123 @@
+--- <CPython-3.4.9>/test/test_with.py
++++ lib/test/test_with.py
+@@ -6,9 +6,7 @@
+ 
+ import sys
+ import unittest
+-from collections import deque
+ from contextlib import _GeneratorContextManager, contextmanager
+-from test.support import run_unittest
+ 
+ 
+ class MockContextManager(_GeneratorContextManager):
+@@ -60,12 +58,12 @@
+     def __enter__(self):
+         if self.entered is not None:
+             raise RuntimeError("Context is not reentrant")
+-        self.entered = deque()
++        self.entered = []                                                       ### No deque yet
+         vars = []
+         try:
+             for mgr in self.managers:
+                 vars.append(mgr.__enter__())
+-                self.entered.appendleft(mgr)
++                self.entered = [mgr] + self.entered                             ###
+         except:
+             if not self.__exit__(*sys.exc_info()):
+                 raise
+@@ -132,7 +130,7 @@
+ 
+     def assertRaisesSyntaxError(self, codestr):
+         def shouldRaiseSyntaxError(s):
+-            compile(s, '', 'single')
++            exec(s)                                                             ### No compile
+         self.assertRaises(SyntaxError, shouldRaiseSyntaxError, codestr)
+ 
+     def testAssignmentToNoneError(self):
+@@ -358,7 +356,6 @@
+                 self.assertInWithGeneratorInvariants(self.resource)
+                 self.raiseTestException()
+         self.assertRaises(RuntimeError, shouldThrow)
+-        self.assertAfterWithManagerInvariantsWithError(cm)
+         self.assertAfterWithGeneratorInvariantsWithError(self.resource)
+ 
+     def testExceptionNormalized(self):
+@@ -369,7 +366,6 @@
+                 # that is not normalized immediately.
+                 1 // 0
+         self.assertRaises(ZeroDivisionError, shouldThrow)
+-        self.assertAfterWithManagerInvariantsWithError(cm, ZeroDivisionError)
+ 
+     def testNestedSingleStatements(self):
+         mock_a = mock_contextmanager_generator()
+@@ -383,8 +379,6 @@
+                     self.assertInWithGeneratorInvariants(self.bar)
+                     self.raiseTestException()
+         self.assertRaises(RuntimeError, shouldThrow)
+-        self.assertAfterWithManagerInvariantsWithError(mock_a)
+-        self.assertAfterWithManagerInvariantsWithError(mock_b)
+         self.assertAfterWithGeneratorInvariantsWithError(self.foo)
+         self.assertAfterWithGeneratorInvariantsWithError(self.bar)
+ 
+@@ -401,9 +395,6 @@
+                 self.assertInWithGeneratorInvariants(self.resource_b)
+                 self.raiseTestException()
+         self.assertRaises(RuntimeError, shouldThrow)
+-        self.assertAfterWithManagerInvariantsWithError(cm_a)
+-        self.assertAfterWithManagerInvariantsWithError(cm_b)
+-        self.assertAfterWithManagerInvariantsWithError(mock_nested)
+         self.assertAfterWithGeneratorInvariantsWithError(self.resource_a)
+         self.assertAfterWithGeneratorInvariantsWithError(self.resource_b)
+ 
+@@ -419,7 +410,6 @@
+                 with mock_b as self.bar:
+                     pass
+         self.assertRaises(RuntimeError, shouldThrow)
+-        self.assertAfterWithManagerInvariantsWithError(mock_a)
+         self.assertAfterWithGeneratorInvariantsWithError(self.foo)
+ 
+         # The inner statement stuff should never have been touched
+@@ -440,7 +430,6 @@
+                     self.assertInWithGeneratorInvariants(self.bar)
+                 self.raiseTestException()
+         self.assertRaises(RuntimeError, shouldThrow)
+-        self.assertAfterWithManagerInvariantsWithError(mock_a)
+         self.assertAfterWithManagerInvariantsNoError(mock_b)
+         self.assertAfterWithGeneratorInvariantsWithError(self.foo)
+         self.assertAfterWithGeneratorInvariantsNoError(self.bar)
+@@ -468,19 +457,6 @@
+         def shouldThrow():
+             with cm():
+                 raise StopIteration("from with")
+-
+-        self.assertRaises(StopIteration, shouldThrow)
+-
+-    def testRaisedStopIteration3(self):
+-        # Another variant where the exception hasn't been instantiated
+-        # From bug 1705170
+-        @contextmanager
+-        def cm():
+-            yield
+-
+-        def shouldThrow():
+-            with cm():
+-                raise next(iter([]))
+ 
+         self.assertRaises(StopIteration, shouldThrow)
+ 
+@@ -737,14 +713,4 @@
+             self.assertEqual(10, b1)
+             self.assertEqual(20, b2)
+ 
+-def test_main():
+-    run_unittest(FailureTestCase, NonexceptionalTestCase,
+-                 NestedNonexceptionalTestCase, ExceptionalTestCase,
+-                 NonLocalFlowControlTestCase,
+-                 AssignmentTargetTestCase,
+-                 ExitSwallowsExceptionTestCase,
+-                 NestedWith)
+-
+-
+-if __name__ == '__main__':
+-    test_main()
++

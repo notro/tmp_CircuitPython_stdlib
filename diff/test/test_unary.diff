@@ -1,0 +1,21 @@
+--- <CPython-3.4.9>/test/test_unary.py
++++ lib/test/test_unary.py
+@@ -1,7 +1,6 @@
+ """Test compiler changes for unary ops (+, -, ~) introduced in Python 2.2"""
+ 
+ import unittest
+-from test.support import run_unittest
+ 
+ class UnaryOpTestCase(unittest.TestCase):
+ 
+@@ -50,9 +49,4 @@
+         self.assertRaises(TypeError, eval, "~2.0")
+ 
+ 
+-def test_main():
+-    run_unittest(UnaryOpTestCase)
+-
+-
+-if __name__ == "__main__":
+-    test_main()
++
