@@ -105,6 +105,8 @@ import unittest
 #    "run_with_tz",
 #    ]
 UnicodeDecodeError = UnicodeError                                               ###
+FileNotFoundError = OSError                                                     ###
+NotADirectoryError = OSError                                                    ###
 
 #class Error(Exception):
 #    """Base class for regression test exceptions."""
@@ -363,22 +365,19 @@ if True:                                                                        
 def unlink(filename):
     try:
         _unlink(filename)
-#    except (FileNotFoundError, NotADirectoryError):
-    except OSError:                                                             ###
+    except (FileNotFoundError, NotADirectoryError):
         pass
 
 def rmdir(dirname):
     try:
         _rmdir(dirname)
-#    except FileNotFoundError:
-    except OSError:                                                             ###
+    except FileNotFoundError:
         pass
 
 def rmtree(path):
     try:
         _rmtree(path)
-#    except FileNotFoundError:
-    except OSError:                                                             ###
+    except FileNotFoundError:
         pass
 
 #def make_legacy_pyc(source):
@@ -970,32 +969,32 @@ def temp_cwd(name='tempcwd', quiet=False):
 #        finally:
 #            os.umask(oldmask)
 #
-## TEST_HOME_DIR refers to the top level directory of the "test" package
-## that contains Python's regression test suite
-#TEST_SUPPORT_DIR = os.path.dirname(os.path.abspath(__file__))
-#TEST_HOME_DIR = os.path.dirname(TEST_SUPPORT_DIR)
-#
+# TEST_HOME_DIR refers to the top level directory of the "test" package
+# that contains Python's regression test suite
+TEST_SUPPORT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_HOME_DIR = os.path.dirname(TEST_SUPPORT_DIR)
+
 ## TEST_DATA_DIR is used as a target download location for remote resources
 #TEST_DATA_DIR = os.path.join(TEST_HOME_DIR, "data")
 #
-#def findfile(filename, subdir=None):
-#    """Try to find a file on sys.path or in the test directory.  If it is not
-#    found the argument passed to the function is returned (this does not
-#    necessarily signal failure; could still be the legitimate path).
-#
-#    Setting *subdir* indicates a relative path to use to find the file
-#    rather than looking directly in the path directories.
-#    """
-#    if os.path.isabs(filename):
-#        return filename
-#    if subdir is not None:
-#        filename = os.path.join(subdir, filename)
-#    path = [TEST_HOME_DIR] + sys.path
-#    for dn in path:
-#        fn = os.path.join(dn, filename)
-#        if os.path.exists(fn): return fn
-#    return filename
-#
+def findfile(filename, subdir=None):
+    """Try to find a file on sys.path or in the test directory.  If it is not
+    found the argument passed to the function is returned (this does not
+    necessarily signal failure; could still be the legitimate path).
+
+    Setting *subdir* indicates a relative path to use to find the file
+    rather than looking directly in the path directories.
+    """
+    if os.path.isabs(filename):
+        return filename
+    if subdir is not None:
+        filename = os.path.join(subdir, filename)
+    path = [TEST_HOME_DIR] + sys.path
+    for dn in path:
+        fn = os.path.join(dn, filename)
+        if os.path.exists(fn): return fn
+    return filename
+
 #def create_empty_file(filename):
 #    """Create an empty file. If the file already exists, truncate it."""
 #    fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
