@@ -161,7 +161,8 @@
 #
 #
 ## Code typically replaced by _warnings
-#def warn(message, category=None, stacklevel=1):
+def warn(message, category=None, stacklevel=1):
+    pass                                                                        ###
 #    """Issue a warning, or maybe ignore it or raise an exception."""
 #    # Check if message is already a Warning object
 #    if isinstance(message, Warning):
