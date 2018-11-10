@@ -69,17 +69,18 @@ unittest.main(module='test.test_os', verbosity=verbosity)
 Memory use
 ----------
 
-Some of the modules like ```datetime``` and ```logging``` use a lot of memory.
+Some modules use a lot of memory.
 
 ```
 import gc
 import sys
+import os
+lib = [e.split('.')[0] for e in os.listdir('/lib')]
+del sys.modules['os']
 
-for modstr in [
-    'contextlib', 'datetime', 'difflib', 'fnmatch', 'functools', 'io',
-    'itertools', 'logging', 'operator', 'os', 're', 'shutil', 'stat',
-    'tempfile', 'time', 'traceback', 'types', 'warnings', 'unittest',
-    ]:
+for modstr in sorted(lib):
+    if modstr in ['genericpath', 'posix', 'posixpath', 'test']:
+        continue
     gc.collect()
     free = gc.mem_free()
     mod = __import__(modstr)
@@ -90,23 +91,27 @@ for modstr in [
         del sys.modules[m]
 
 
-contextlib        4144 bytes
-datetime         33472 bytes
-difflib          19552 bytes
-fnmatch          15408 bytes
+contextlib        2192 bytes
+copy              3520 bytes
+copyreg            480 bytes
+datetime         29936 bytes
+difflib          16688 bytes
+fnmatch          12368 bytes
 functools          864 bytes
-io                 256 bytes
-itertools         5520 bytes
-logging          35344 bytes
-operator           960 bytes
+io                 112 bytes
+itertools         5120 bytes
+logging          32336 bytes
+operator          1216 bytes
 os                9824 bytes
+pathlib          33936 bytes
 re                1648 bytes
-shutil           16192 bytes
+shutil           15680 bytes
 stat              1936 bytes
-tempfile         17920 bytes
+tempfile         18976 bytes
 time              2576 bytes
-traceback         2816 bytes
-types              752 bytes
-warnings           432 bytes
-unittest         84320 bytes
+traceback         3072 bytes
+types              224 bytes
+unittest         78448 bytes
+warnings           512 bytes
+zipfile          29664 bytes
 ```
