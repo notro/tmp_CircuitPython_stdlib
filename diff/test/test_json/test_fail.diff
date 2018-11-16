@@ -1,0 +1,46 @@
+--- <CPython-3.4.9>/test/test_json/test_fail.py
++++ lib/test/test_json/test_fail.py
+@@ -37,8 +37,6 @@
+     '[\\naked]',
+     # http://json.org/JSON_checker/test/fail17.json
+     '["Illegal backslash escape: \\017"]',
+-    # http://json.org/JSON_checker/test/fail18.json
+-    '[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]',
+     # http://json.org/JSON_checker/test/fail19.json
+     '{"Missing colon" null}',
+     # http://json.org/JSON_checker/test/fail20.json
+@@ -51,14 +49,6 @@
+     '["Bad value", truth]',
+     # http://json.org/JSON_checker/test/fail24.json
+     "['single quote']",
+-    # http://json.org/JSON_checker/test/fail25.json
+-    '["\ttab\tcharacter\tin\tstring\t"]',
+-    # http://json.org/JSON_checker/test/fail26.json
+-    '["tab\\   character\\   in\\  string\\  "]',
+-    # http://json.org/JSON_checker/test/fail27.json
+-    '["line\nbreak"]',
+-    # http://json.org/JSON_checker/test/fail28.json
+-    '["line\\\nbreak"]',
+     # http://json.org/JSON_checker/test/fail29.json
+     '[0e]',
+     # http://json.org/JSON_checker/test/fail30.json
+@@ -69,13 +59,10 @@
+     '{"Comma instead if closing brace": true,',
+     # http://json.org/JSON_checker/test/fail33.json
+     '["mismatch"}',
+-    # http://code.google.com/p/simplejson/issues/detail?id=3
+-    '["A\u001FZ control characters in string"]',
+ ]
+ 
+ SKIPS = {
+     1: "why not have a string payload?",
+-    18: "spec doesn't specify any nesting limitations",
+ }
+ 
+ class TestFail:
+@@ -191,4 +178,4 @@
+                 self.loads, data)
+ 
+ class TestPyFail(TestFail, PyTest): pass
+-class TestCFail(TestFail, CTest): pass
++

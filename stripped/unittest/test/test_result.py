@@ -296,17 +296,6 @@ class Test_TestResult(unittest.TestCase):
                         'testGetNestedSubTestDescriptionWithoutDocstring '
                         '(' + __name__ + '.Test_TestResult) (bar=2, foo=1)')
 
-
-    def testStackFrameTrimming(self):
-        class Frame(object):
-            class tb_frame(object):
-                f_globals = {}
-        result = unittest.TestResult()
-        self.assertFalse(result._is_relevant_tb_level(Frame))
-
-        Frame.tb_frame.f_globals['__unittest'] = True
-        self.assertTrue(result._is_relevant_tb_level(Frame))
-
     def testFailFast(self):
         result = unittest.TestResult()
         result._exc_info_to_string = lambda *_: ''

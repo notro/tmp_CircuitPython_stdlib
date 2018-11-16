@@ -1,6 +1,6 @@
 --- <CPython-3.4.9>/tempfile.py
 +++ lib/tempfile.py
-@@ -15,40 +15,15 @@
+@@ -15,40 +15,18 @@
               another candidate location to store temporary files.
  """
  
@@ -39,10 +39,13 @@
 -if hasattr(_os, 'O_BINARY'):
 -    _bin_openflags |= _os.O_BINARY
 +
++FileNotFoundError = OSError                                                     ###
++FileExistsError = OSError                                                       ###
++                                                                                ###
  
  if hasattr(_os, 'TMP_MAX'):
      TMP_MAX = _os.TMP_MAX
-@@ -61,7 +36,6 @@
+@@ -61,7 +39,6 @@
  
  # Internal routines.
  
@@ -50,7 +53,7 @@
  
  if hasattr(_os, "lstat"):
      _stat = _os.lstat
-@@ -92,21 +66,13 @@
+@@ -92,21 +69,13 @@
  
      characters = "abcdefghijklmnopqrstuvwxyz0123456789_"
  
@@ -73,7 +76,7 @@
          return ''.join(letters)
  
  def _candidate_tempdir_list():
-@@ -115,16 +81,7 @@
+@@ -115,22 +84,13 @@
  
      dirlist = []
  
@@ -91,7 +94,14 @@
  
      # As a last resort, the current directory.
      try:
-@@ -154,25 +111,12 @@
+         dirlist.append(_os.getcwd())
+     except (AttributeError, OSError):
+-        dirlist.append(_os.curdir)
++        pass                                                                    ###
+ 
+     return dirlist
+ 
+@@ -154,25 +114,12 @@
              name = next(namer)
              filename = _os.path.join(dir, name)
              try:
@@ -120,7 +130,7 @@
              except OSError:
                  break   # no point trying more names in this directory
      raise FileNotFoundError(_errno.ENOENT,
-@@ -186,39 +130,10 @@
+@@ -186,39 +133,10 @@
  
      global _name_sequence
      if _name_sequence is None:
@@ -160,7 +170,7 @@
  
  
  # User visible interfaces.
-@@ -233,49 +148,9 @@
+@@ -233,49 +151,9 @@
      """Accessor for tempfile.tempdir."""
      global tempdir
      if tempdir is None:
@@ -210,15 +220,7 @@
  
  
  def mkdtemp(suffix="", prefix=template, dir=None):
-@@ -296,6 +171,7 @@
- 
-     names = _get_candidate_names()
- 
-+    FileExistsError = OSError                                                   ###
-     for seq in range(TMP_MAX):
-         name = next(names)
-         file = _os.path.join(dir, prefix + name + suffix)
-@@ -304,14 +180,6 @@
+@@ -304,14 +182,6 @@
              return file
          except FileExistsError:
              continue    # try again
@@ -233,73 +235,32 @@
  
      raise FileExistsError(_errno.EEXIST,
                            "No usable temporary directory name found")
-@@ -347,367 +215,4 @@
-                           "No usable temporary filename found")
- 
- 
--class _TemporaryFileCloser:
--    """A separate object allowing proper closing of a temporary file's
--    underlying file object, without adding a __del__ method to the
--    temporary file."""
--
--    file = None  # Set here since __del__ checks it
--    close_called = False
--
--    def __init__(self, file, name, delete=True):
--        self.file = file
--        self.name = name
--        self.delete = delete
--
--    # NT provides delete-on-close as a primitive, so we don't need
--    # the wrapper to do anything special.  We still use it so that
--    # file.name is useful (i.e. not "(fdopen)") with NamedTemporaryFile.
+@@ -363,7 +233,7 @@
+     # NT provides delete-on-close as a primitive, so we don't need
+     # the wrapper to do anything special.  We still use it so that
+     # file.name is useful (i.e. not "(fdopen)") with NamedTemporaryFile.
 -    if _os.name != 'nt':
--        # Cache the unlinker so we don't get spurious errors at
--        # shutdown when the module-level "os" is None'd out.  Note
--        # that this must be referenced as self.unlink, because the
--        # name TemporaryFileWrapper may also get None'd out before
--        # __del__ is called.
--
--        def close(self, unlink=_os.unlink):
--            if not self.close_called and self.file is not None:
--                self.close_called = True
--                try:
--                    self.file.close()
--                finally:
--                    if self.delete:
--                        unlink(self.name)
--
--        # Need to ensure the file is deleted on __del__
--        def __del__(self):
--            self.close()
--
++    if True:                                                                    ###
+         # Cache the unlinker so we don't get spurious errors at
+         # shutdown when the module-level "os" is None'd out.  Note
+         # that this must be referenced as self.unlink, because the
+@@ -383,12 +253,6 @@
+         def __del__(self):
+             self.close()
+ 
 -    else:
 -        def close(self):
 -            if not self.close_called:
 -                self.close_called = True
 -                self.file.close()
 -
--
--class _TemporaryFileWrapper:
--    """Temporary file wrapper
--
--    This class provides a wrapper around files opened for
--    temporary use.  In particular, it seeks to automatically
--    remove the file when it is no longer needed.
--    """
--
--    def __init__(self, file, name, delete=True):
--        self.file = file
--        self.name = name
--        self.delete = delete
--        self._closer = _TemporaryFileCloser(file, name, delete)
--
--    def __getattr__(self, name):
--        # Attribute lookups are delegated to the underlying file
--        # and cached for non-numeric results
--        # (i.e. methods are cached, closed and friends are not)
--        file = self.__dict__['file']
--        a = getattr(file, name)
+ 
+ class _TemporaryFileWrapper:
+     """Temporary file wrapper
+@@ -410,17 +274,6 @@
+         # (i.e. methods are cached, closed and friends are not)
+         file = self.__dict__['file']
+         a = getattr(file, name)
 -        if hasattr(a, '__call__'):
 -            func = a
 -            @_functools.wraps(func)
@@ -311,59 +272,13 @@
 -            a = func_wrapper
 -        if not isinstance(a, int):
 -            setattr(self, name, a)
--        return a
--
--    # The underlying __enter__ method returns the wrong object
--    # (self.file) so override it to return the wrapper
--    def __enter__(self):
--        self.file.__enter__()
--        return self
--
--    # Need to trap __exit__ as well to ensure the file gets
--    # deleted when used in a with statement
--    def __exit__(self, exc, value, tb):
--        result = self.file.__exit__(exc, value, tb)
--        self.close()
--        return result
--
--    def close(self):
--        """
--        Close the temporary file, possibly deleting it.
--        """
--        self._closer.close()
--
--    # iter() doesn't use __getattr__ to find the __iter__ method
--    def __iter__(self):
--        # Don't return iter(self.file), but yield from it to avoid closing
--        # file as long as it's being used as iterator (see issue #23700).  We
--        # can't use 'yield from' here because iter(file) returns the file
--        # object itself, which has a close method, and thus the file would get
--        # closed when the generator is finalized, due to PEP380 semantics.
--        for line in self.file:
--            yield line
--
--
--def NamedTemporaryFile(mode='w+b', buffering=-1, encoding=None,
--                       newline=None, suffix="", prefix=template,
--                       dir=None, delete=True):
--    """Create and return a temporary file.
--    Arguments:
--    'prefix', 'suffix', 'dir' -- as for mkstemp.
--    'mode' -- the mode argument to io.open (default "w+b").
--    'buffering' -- the buffer size argument to io.open (default -1).
--    'encoding' -- the encoding argument to io.open (default None)
--    'newline' -- the newline argument to io.open (default None)
--    'delete' -- whether the file is deleted on close (default True).
--    The file is created as mkstemp() would do it.
--
--    Returns an object with a file-like interface; the name of the file
--    is accessible as file.name.  The file will be automatically deleted
--    when it is closed unless the 'delete' argument is set to False.
--    """
--
--    if dir is None:
--        dir = gettempdir()
--
+         return a
+ 
+     # The underlying __enter__ method returns the wrong object
+@@ -474,240 +327,13 @@
+     if dir is None:
+         dir = gettempdir()
+ 
 -    flags = _bin_openflags
 -
 -    # Setting O_TEMPORARY in the flags causes the OS to delete
@@ -382,10 +297,15 @@
 -        raise
 -
 -if _os.name != 'posix' or _os.sys.platform == 'cygwin':
--    # On non-POSIX and Cygwin systems, assume that we cannot unlink a file
--    # while it is open.
--    TemporaryFile = NamedTemporaryFile
--
++    name = mktemp(suffix=suffix, prefix=prefix, dir=dir)                        ###
++    file = open(name, mode, buffering=buffering, encoding=encoding)             ###
++    return _TemporaryFileWrapper(file, name, delete)                            ###
++
++if True:                                                                        ###
+     # On non-POSIX and Cygwin systems, assume that we cannot unlink a file
+     # while it is open.
+     TemporaryFile = NamedTemporaryFile
+ 
 -else:
 -    def TemporaryFile(mode='w+b', buffering=-1, encoding=None,
 -                      newline=None, suffix="", prefix=template,

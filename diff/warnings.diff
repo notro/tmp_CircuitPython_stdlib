@@ -1,8 +1,8 @@
 --- <CPython-3.4.9>/warnings.py
 +++ lib/warnings.py
-@@ -1,410 +1,14 @@
+@@ -1,410 +1,16 @@
  """Python part of the warnings subsystem."""
--
+ 
 -import sys
 -
 -__all__ = ["warn", "warn_explicit", "showwarning",
@@ -164,7 +164,7 @@
 -
 -
 -# Code typically replaced by _warnings
--def warn(message, category=None, stacklevel=1):
+ def warn(message, category=None, stacklevel=1):
 -    """Issue a warning, or maybe ignore it or raise an exception."""
 -    # Check if message is already a Warning object
 -    if isinstance(message, Warning):
@@ -296,7 +296,8 @@
 -                    "line : %r}" % (self.message, self._category_name,
 -                                    self.filename, self.lineno, self.line))
 -
- 
+-
++    pass                                                                        ###
  class catch_warnings(object):
  
 -    """A context manager that copies and restores the warnings filter upon

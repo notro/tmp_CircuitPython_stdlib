@@ -59,16 +59,7 @@
  
      def stopTestRun(self):
          """Called once after all tests are executed.
-@@ -173,8 +142,6 @@
-         """Converts a sys.exc_info()-style tuple of values into a string."""
-         exctype, value, tb = err
-         # Skip test runner traceback levels
--        while tb and self._is_relevant_tb_level(tb):
--            tb = tb.tb_next
- 
-         if exctype is test.failureException:
-             # Skip assert*() traceback levels
-@@ -183,17 +150,6 @@
+@@ -183,22 +152,12 @@
          else:
              msgLines = traceback.format_exception(exctype, value, tb)
  
@@ -86,7 +77,14 @@
          return ''.join(msgLines)
  
  
-@@ -211,3 +167,4 @@
+     def _is_relevant_tb_level(self, tb):
+-        return '__unittest' in tb.tb_frame.f_globals
++        filename = tb.tb_frame.f_code.co_filename                               ###
++        return '/unittest/' in filename and not '/unittest/test/' in filename   ###
+ 
+     def _count_relevant_tb_levels(self, tb):
+         length = 0
+@@ -211,3 +170,4 @@
          return ("<%s run=%i errors=%i failures=%i>" %
                 (util.strclass(self.__class__), self.testsRun, len(self.errors),
                  len(self.failures)))

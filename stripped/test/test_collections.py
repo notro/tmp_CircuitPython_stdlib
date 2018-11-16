@@ -73,7 +73,7 @@ class TestNamedTuple(unittest.TestCase):
         self.assertEqual(repr(Dot(1)), 'Dot(d=1)')
 
         # n = 5000
-        n = 254 # SyntaxError: more than 255 arguments:
+        n = 64                                                                  ###
         ascii_letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'  ###
         names = list(set(''.join([choice(ascii_letters)                         ###
                                   for j in range(10)]) for i in range(n)))

@@ -1,0 +1,44 @@
+--- <CPython-3.4.9>/test/test_json/test_unicode.py
++++ lib/test/test_json/test_unicode.py
+@@ -5,26 +5,6 @@
+ class TestUnicode:
+     # test_encoding1 and test_encoding2 from 2.x are irrelevant (only str
+     # is supported as input, not bytes).
+-
+-    def test_encoding3(self):
+-        u = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
+-        j = self.dumps(u)
+-        self.assertEqual(j, '"\\u03b1\\u03a9"')
+-
+-    def test_encoding4(self):
+-        u = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
+-        j = self.dumps([u])
+-        self.assertEqual(j, '["\\u03b1\\u03a9"]')
+-
+-    def test_encoding5(self):
+-        u = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
+-        j = self.dumps(u, ensure_ascii=False)
+-        self.assertEqual(j, '"{0}"'.format(u))
+-
+-    def test_encoding6(self):
+-        u = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
+-        j = self.dumps([u], ensure_ascii=False)
+-        self.assertEqual(j, '["{0}"]'.format(u))
+ 
+     def test_big_unicode_encode(self):
+         u = '\U0001d120'
+@@ -37,7 +17,7 @@
+         self.assertEqual(self.loads('"z\\ud834\\udd20x"'), u)
+ 
+     def test_unicode_decode(self):
+-        for i in range(0, 0xd7ff):
++        for i in range(0xd000, 0xd7ff):                                         ### Probably qstr's eating up memory so just try some
+             u = chr(i)
+             s = '"\\u{0:04x}"'.format(i)
+             self.assertEqual(self.loads(s), u)
+@@ -72,4 +52,4 @@
+ 
+ 
+ class TestPyUnicode(TestUnicode, PyTest): pass
+-class TestCUnicode(TestUnicode, CTest): pass
++

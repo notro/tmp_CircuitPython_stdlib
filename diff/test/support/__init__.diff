@@ -1,6 +1,6 @@
 --- <CPython-3.4.9>/test/support/__init__.py
 +++ lib/test/support/__init__.py
-@@ -1,358 +1,21 @@
+@@ -1,358 +1,23 @@
  """Supporting definitions for the Python regression tests."""
  
 -if __name__ != 'test.support':
@@ -138,6 +138,8 @@
 -        yield
 -
 +UnicodeDecodeError = UnicodeError                                               ###
++FileNotFoundError = OSError                                                     ###
++NotADirectoryError = OSError                                                    ###
  
  def import_module(name, deprecated=False, *, required_on=()):
 -    """Import and return the module to be tested, raising SkipTest if
@@ -363,27 +365,10 @@
      _unlink = os.unlink
      _rmdir = os.rmdir
      _rmtree = shutil.rmtree
-@@ -360,391 +23,22 @@
- def unlink(filename):
-     try:
-         _unlink(filename)
--    except (FileNotFoundError, NotADirectoryError):
-+    except OSError:                                                             ###
+@@ -375,376 +40,7 @@
+     except FileNotFoundError:
          pass
  
- def rmdir(dirname):
-     try:
-         _rmdir(dirname)
--    except FileNotFoundError:
-+    except OSError:                                                             ###
-         pass
- 
- def rmtree(path):
-     try:
-         _rmtree(path)
--    except FileNotFoundError:
--        pass
--
 -def make_legacy_pyc(source):
 -    """Move a PEP 3147 pyc/pyo file to its legacy pyc/pyo location.
 -
@@ -754,14 +739,11 @@
 -# Disambiguate TESTFN for parallel testing, while letting it remain a valid
 -# module name.
 -TESTFN = "{}_{}_tmp".format(TESTFN, os.getpid())
-+    except OSError:                                                             ###
-+        pass
-+
 +TESTFN = '$test'                                                                ###
  
  # FS_NONASCII: non-ASCII character encodable by os.fsencode(),
  # or None if there is no such character.
-@@ -792,46 +86,12 @@
+@@ -792,46 +88,12 @@
  
  # TESTFN_UNICODE is a non-ascii filename
  TESTFN_UNICODE = TESTFN + "-\xe0\xf2\u0258\u0141\u011f"
@@ -809,7 +791,7 @@
  
  # TESTFN_UNDECODABLE is a filename (bytes type) that should *not* be able to be
  # decoded from the filesystem encoding (in strict mode). It can be None if we
-@@ -887,6 +147,7 @@
+@@ -887,6 +149,7 @@
      """
      dir_created = False
      if path is None:
@@ -817,7 +799,7 @@
          path = tempfile.mkdtemp()
          dir_created = True
          path = os.path.realpath(path)
-@@ -951,1037 +212,6 @@
+@@ -951,23 +214,10 @@
          with change_cwd(temp_path, quiet=quiet) as cwd_dir:
              yield cwd_dir
  
@@ -831,32 +813,20 @@
 -        finally:
 -            os.umask(oldmask)
 -
--# TEST_HOME_DIR refers to the top level directory of the "test" package
--# that contains Python's regression test suite
--TEST_SUPPORT_DIR = os.path.dirname(os.path.abspath(__file__))
--TEST_HOME_DIR = os.path.dirname(TEST_SUPPORT_DIR)
+ # TEST_HOME_DIR refers to the top level directory of the "test" package
+ # that contains Python's regression test suite
+ TEST_SUPPORT_DIR = os.path.dirname(os.path.abspath(__file__))
+ TEST_HOME_DIR = os.path.dirname(TEST_SUPPORT_DIR)
 -
 -# TEST_DATA_DIR is used as a target download location for remote resources
 -TEST_DATA_DIR = os.path.join(TEST_HOME_DIR, "data")
--
--def findfile(filename, subdir=None):
--    """Try to find a file on sys.path or in the test directory.  If it is not
--    found the argument passed to the function is returned (this does not
--    necessarily signal failure; could still be the legitimate path).
--
--    Setting *subdir* indicates a relative path to use to find the file
--    rather than looking directly in the path directories.
--    """
--    if os.path.isabs(filename):
--        return filename
--    if subdir is not None:
--        filename = os.path.join(subdir, filename)
--    path = [TEST_HOME_DIR] + sys.path
--    for dn in path:
--        fn = os.path.join(dn, filename)
--        if os.path.exists(fn): return fn
--    return filename
--
+ 
+ def findfile(filename, subdir=None):
+     """Try to find a file on sys.path or in the test directory.  If it is not
+@@ -987,1001 +237,6 @@
+         if os.path.exists(fn): return fn
+     return filename
+ 
 -def create_empty_file(filename):
 -    """Create an empty file. If the file already exists, truncate it."""
 -    fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
@@ -1855,7 +1825,7 @@
  @contextlib.contextmanager
  def swap_attr(obj, attr, new_val):
      """Temporary swap out an attribute with a new object.
-@@ -2036,228 +266,9 @@
+@@ -2036,228 +291,9 @@
          finally:
              del obj[item]
  
@@ -2085,7 +2055,7 @@
      # check that 'attr_name' is a real attribute for 'object_to_patch'
      # will raise AttributeError if it does not exist
      getattr(object_to_patch, attr_name)
-@@ -2273,10 +284,7 @@
+@@ -2273,10 +309,7 @@
  
      # restore the value when the test is done
      def cleanup():
@@ -2096,7 +2066,7 @@
  
      test_instance.addCleanup(cleanup)
  
-@@ -2284,21 +292,4 @@
+@@ -2284,21 +317,4 @@
      setattr(object_to_patch, attr_name, new_value)
  
  

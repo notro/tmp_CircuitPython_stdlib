@@ -75,7 +75,7 @@ def find_files(fork, src, args):
     files = []
     for (dirpath, dirnames, filenames) in os.walk(fork):
         for filename in filenames:
-            if filename.endswith('.mpy'):
+            if any(ext for ext in ['.mpy', '.zip', '.tar'] if os.path.splitext(filename)[1] == ext):
                 continue
 
             if filename[-4].isdigit() or os.path.exists(os.path.join(dirpath, filename[:-3] + '2.py')):

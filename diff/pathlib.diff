@@ -1,0 +1,552 @@
+--- <CPython-3.4.9>/pathlib.py
++++ lib/pathlib.py
+@@ -1,35 +1,17 @@
+ import fnmatch
+-import functools
+ import io
+-import ntpath
+ import os
+ import posixpath
+ import re
+-import sys
+-from collections import Sequence
+ from contextlib import contextmanager
+-from errno import EINVAL, ENOENT, ENOTDIR
++from errno import EINVAL, ENOENT                                                ###
+ from operator import attrgetter
+ from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
+-from urllib.parse import quote_from_bytes as urlquote_from_bytes
+-
+-
+-supports_symlinks = True
+-if os.name == 'nt':
+-    import nt
+-    if sys.getwindowsversion()[:2] >= (6, 0):
+-        from nt import _getfinalpathname
+-    else:
+-        supports_symlinks = False
+-        _getfinalpathname = None
+-else:
+-    nt = None
+-
+-
+-__all__ = [
+-    "PurePath", "PurePosixPath", "PureWindowsPath",
+-    "Path", "PosixPath", "WindowsPath",
+-    ]
++
++
++supports_symlinks = False                                                       ###
++
++
+ 
+ #
+ # Internals
+@@ -63,10 +45,10 @@
+             if sep in rel:
+                 for x in reversed(rel.split(sep)):
+                     if x and x != '.':
+-                        parsed.append(sys.intern(x))
++                        parsed.append(x)                                        ###
+             else:
+                 if rel and rel != '.':
+-                    parsed.append(sys.intern(rel))
++                    parsed.append(rel)                                          ###
+             if drv or root:
+                 if not drv:
+                     # If no drive is present, try to find one in the previous
+@@ -103,127 +85,6 @@
+             return drv, root, parts + parts2
+         return drv2, root2, parts2
+ 
+-
+-class _WindowsFlavour(_Flavour):
+-    # Reference for Windows paths can be found at
+-    # http://msdn.microsoft.com/en-us/library/aa365247%28v=vs.85%29.aspx
+-
+-    sep = '\\'
+-    altsep = '/'
+-    has_drv = True
+-    pathmod = ntpath
+-
+-    is_supported = (os.name == 'nt')
+-
+-    drive_letters = (
+-        set(chr(x) for x in range(ord('a'), ord('z') + 1)) |
+-        set(chr(x) for x in range(ord('A'), ord('Z') + 1))
+-    )
+-    ext_namespace_prefix = '\\\\?\\'
+-
+-    reserved_names = (
+-        {'CON', 'PRN', 'AUX', 'NUL'} |
+-        {'COM%d' % i for i in range(1, 10)} |
+-        {'LPT%d' % i for i in range(1, 10)}
+-        )
+-
+-    # Interesting findings about extended paths:
+-    # - '\\?\c:\a', '//?/c:\a' and '//?/c:/a' are all supported
+-    #   but '\\?\c:/a' is not
+-    # - extended paths are always absolute; "relative" extended paths will
+-    #   fail.
+-
+-    def splitroot(self, part, sep=sep):
+-        first = part[0:1]
+-        second = part[1:2]
+-        if (second == sep and first == sep):
+-            # XXX extended paths should also disable the collapsing of "."
+-            # components (according to MSDN docs).
+-            prefix, part = self._split_extended_path(part)
+-            first = part[0:1]
+-            second = part[1:2]
+-        else:
+-            prefix = ''
+-        third = part[2:3]
+-        if (second == sep and first == sep and third != sep):
+-            # is a UNC path:
+-            # vvvvvvvvvvvvvvvvvvvvv root
+-            # \\machine\mountpoint\directory\etc\...
+-            #            directory ^^^^^^^^^^^^^^
+-            index = part.find(sep, 2)
+-            if index != -1:
+-                index2 = part.find(sep, index + 1)
+-                # a UNC path can't have two slashes in a row
+-                # (after the initial two)
+-                if index2 != index + 1:
+-                    if index2 == -1:
+-                        index2 = len(part)
+-                    if prefix:
+-                        return prefix + part[1:index2], sep, part[index2+1:]
+-                    else:
+-                        return part[:index2], sep, part[index2+1:]
+-        drv = root = ''
+-        if second == ':' and first in self.drive_letters:
+-            drv = part[:2]
+-            part = part[2:]
+-            first = third
+-        if first == sep:
+-            root = first
+-            part = part.lstrip(sep)
+-        return prefix + drv, root, part
+-
+-    def casefold(self, s):
+-        return s.lower()
+-
+-    def casefold_parts(self, parts):
+-        return [p.lower() for p in parts]
+-
+-    def resolve(self, path):
+-        s = str(path)
+-        if not s:
+-            return os.getcwd()
+-        if _getfinalpathname is not None:
+-            return self._ext_to_normal(_getfinalpathname(s))
+-        # Means fallback on absolute
+-        return None
+-
+-    def _split_extended_path(self, s, ext_prefix=ext_namespace_prefix):
+-        prefix = ''
+-        if s.startswith(ext_prefix):
+-            prefix = s[:4]
+-            s = s[4:]
+-            if s.startswith('UNC\\'):
+-                prefix += s[:3]
+-                s = '\\' + s[3:]
+-        return prefix, s
+-
+-    def _ext_to_normal(self, s):
+-        # Turn back an extended path into a normal DOS-like path
+-        return self._split_extended_path(s)[1]
+-
+-    def is_reserved(self, parts):
+-        # NOTE: the rules for reserved names seem somewhat complicated
+-        # (e.g. r"..\NUL" is reserved but not r"foo\NUL").
+-        # We err on the side of caution and return True for paths which are
+-        # not considered reserved by Windows.
+-        if not parts:
+-            return False
+-        if parts[0].startswith('\\\\'):
+-            # UNC paths are never reserved
+-            return False
+-        return parts[-1].partition('.')[0].upper() in self.reserved_names
+-
+-    def make_uri(self, path):
+-        # Under Windows, file URIs use the UTF-8 encoding.
+-        drive = path.drive
+-        if len(drive) == 2 and drive[1] == ':':
+-            # It's a path on a local drive => 'file:///c:/a/b'
+-            rest = path.as_posix()[2:].lstrip('/')
+-            return 'file:///%s/%s' % (
+-                drive, urlquote_from_bytes(rest.encode('utf-8')))
+-        else:
+-            # It's a path on a network drive => 'file://host/share/a/b'
+-            return 'file:' + urlquote_from_bytes(path.as_posix().encode('utf-8'))
+ 
+ 
+ class _PosixFlavour(_Flavour):
+@@ -284,7 +145,7 @@
+                 try:
+                     target = accessor.readlink(newpath)
+                 except OSError as e:
+-                    if e.errno != EINVAL:
++                    if e.args and e.args[0] != EINVAL:                          ###
+                         raise
+                     # Not a symlink
+                     path = newpath
+@@ -303,13 +164,9 @@
+         return False
+ 
+     def make_uri(self, path):
+-        # We represent the path using the local filesystem encoding,
+-        # for portability to other applications.
+-        bpath = bytes(path)
+-        return 'file://' + urlquote_from_bytes(bpath)
+-
+-
+-_windows_flavour = _WindowsFlavour()
++        raise NotImplementedError("make_uri() not available on this system")    ###
++
++
+ _posix_flavour = _PosixFlavour()
+ 
+ 
+@@ -321,13 +178,11 @@
+ class _NormalAccessor(_Accessor):
+ 
+     def _wrap_strfunc(strfunc):
+-        @functools.wraps(strfunc)
+         def wrapped(pathobj, *args):
+             return strfunc(str(pathobj), *args)
+         return staticmethod(wrapped)
+ 
+     def _wrap_binary_strfunc(strfunc):
+-        @functools.wraps(strfunc)
+         def wrapped(pathobjA, pathobjB, *args):
+             return strfunc(str(pathobjA), str(pathobjB), *args)
+         return staticmethod(wrapped)
+@@ -336,11 +191,13 @@
+ 
+     lstat = _wrap_strfunc(os.lstat)
+ 
+-    open = _wrap_strfunc(os.open)
++    def open(*args, **kwargs):                                                  ###
++        raise NotImplementedError("open() not available on this system")        ###
+ 
+     listdir = _wrap_strfunc(os.listdir)
+ 
+-    chmod = _wrap_strfunc(os.chmod)
++    def chmod(*args, **kwargs):                                                 ###
++        raise NotImplementedError("chmod() not available on this system")       ###
+ 
+     if hasattr(os, "lchmod"):
+         lchmod = _wrap_strfunc(os.lchmod)
+@@ -356,21 +213,15 @@
+ 
+     rename = _wrap_binary_strfunc(os.rename)
+ 
+-    replace = _wrap_binary_strfunc(os.replace)
+-
+-    if nt:
+-        if supports_symlinks:
+-            symlink = _wrap_binary_strfunc(os.symlink)
+-        else:
++    def replace(*args, **kwargs):                                               ###
++        raise NotImplementedError("replace() not available on this system")     ###
++
++    if True:                                                                    ###
+             def symlink(a, b, target_is_directory):
+                 raise NotImplementedError("symlink() not available on this system")
+-    else:
+-        # Under POSIX, os.symlink() takes two args
+-        @staticmethod
+-        def symlink(a, b, target_is_directory):
+-            return os.symlink(str(a), str(b))
+-
+-    utime = _wrap_strfunc(os.utime)
++
++    def utime(*args, **kwargs):                                                 ###
++        raise NotImplementedError("utime() not available on this system")       ###
+ 
+     # Helper for resolve()
+     def readlink(self, path):
+@@ -384,24 +235,6 @@
+ # Globbing helpers
+ #
+ 
+-@contextmanager
+-def _cached(func):
+-    try:
+-        func.__cached__
+-        yield func
+-    except AttributeError:
+-        cache = {}
+-        def wrapper(*args):
+-            try:
+-                return cache[args]
+-            except KeyError:
+-                value = cache[args] = func(*args)
+-                return value
+-        wrapper.__cached__ = True
+-        try:
+-            yield wrapper
+-        finally:
+-            cache.clear()
+ 
+ def _make_selector(pattern_parts):
+     pat = pattern_parts[0]
+@@ -416,8 +249,6 @@
+         cls = _PreciseSelector
+     return cls(pat, child_parts)
+ 
+-if hasattr(functools, "lru_cache"):
+-    _make_selector = functools.lru_cache()(_make_selector)
+ 
+ 
+ class _Selector:
+@@ -507,7 +338,7 @@
+         try:
+             if not is_dir(parent_path):
+                 return
+-            with _cached(listdir) as listdir:
++            if True:                                                            ###
+                 yielded = set()
+                 try:
+                     successor_select = self.successor._select_from
+@@ -526,6 +357,48 @@
+ # Public API
+ #
+ 
++class Sequence:                                                                 ###
++    def __iter__(self):                                                         ###
++        i = 0                                                                   ###
++        try:                                                                    ###
++            while True:                                                         ###
++                v = self[i]                                                     ###
++                yield v                                                         ###
++                i += 1                                                          ###
++        except IndexError:                                                      ###
++            return                                                              ###
++                                                                                ###
++    def __contains__(self, value):                                              ###
++        for v in self:                                                          ###
++            if v is value or v == value:                                        ###
++                return True                                                     ###
++        return False                                                            ###
++                                                                                ###
++    def __reversed__(self):                                                     ###
++        for i in reversed(range(len(self))):                                    ###
++            yield self[i]                                                       ###
++                                                                                ###
++    def index(self, value, start=0, stop=None):                                 ###
++        if start is not None and start < 0:                                     ###
++            start = max(len(self) + start, 0)                                   ###
++        if stop is not None and stop < 0:                                       ###
++            stop += len(self)                                                   ###
++                                                                                ###
++        i = start                                                               ###
++        while stop is None or i < stop:                                         ###
++            try:                                                                ###
++                v = self[i]                                                     ###
++                if v is value or v == value:                                    ###
++                    return i                                                    ###
++            except IndexError:                                                  ###
++                break                                                           ###
++            i += 1                                                              ###
++        raise ValueError                                                        ###
++                                                                                ###
++    def count(self, value):                                                     ###
++        'S.count(value) -> integer -- return number of occurrences of value'    ###
++        return sum(1 for v in self if v is value or v == value)                 ###
++                                                                                ###
+ class _PathParents(Sequence):
+     """This object provides sequence-like access to the logical ancestors
+     of a path.  Don't try to construct it yourself."""
+@@ -561,10 +434,6 @@
+     PureWindowsPath object.  You can also instantiate either of these classes
+     directly, regardless of your system.
+     """
+-    __slots__ = (
+-        '_drv', '_root', '_parts',
+-        '_str', '_hash', '_pparts', '_cached_cparts',
+-    )
+ 
+     def __new__(cls, *args):
+         """Construct a PurePath from one or several strings and or existing
+@@ -573,7 +442,7 @@
+         new PurePath object.
+         """
+         if cls is PurePath:
+-            cls = PureWindowsPath if os.name == 'nt' else PurePosixPath
++            cls = PurePosixPath                                                 ###
+         return cls._from_parts(args)
+ 
+     def __reduce__(self):
+@@ -901,26 +770,20 @@
+ 
+ class PurePosixPath(PurePath):
+     _flavour = _posix_flavour
+-    __slots__ = ()
+-
+-
+-class PureWindowsPath(PurePath):
+-    _flavour = _windows_flavour
+-    __slots__ = ()
++
+ 
+ 
+ # Filesystem-accessing classes
+ 
++def e_errno_not_in_ENOENT_ENOTDIR(e):                                           ###
++    return e.args and e.args[0] not in (ENOENT, )                               ###
++                                                                                ###
+ 
+ class Path(PurePath):
+-    __slots__ = (
+-        '_accessor',
+-        '_closed',
+-    )
+ 
+     def __new__(cls, *args, **kwargs):
+         if cls is Path:
+-            cls = WindowsPath if os.name == 'nt' else PosixPath
++            cls = PosixPath                                                     ###
+         self = cls._from_parts(args, init=False)
+         if not self._flavour.is_supported:
+             raise NotImplementedError("cannot instantiate %r on your system"
+@@ -955,18 +818,6 @@
+     def _raise_closed(self):
+         raise ValueError("I/O operation on closed path")
+ 
+-    def _opener(self, name, flags, mode=0o666):
+-        # A stub for the opener argument to built-in open()
+-        return self._accessor.open(self, flags, mode)
+-
+-    def _raw_open(self, flags, mode=0o777):
+-        """
+-        Open the file pointed by this path and return a file descriptor,
+-        as os.open() does.
+-        """
+-        if self._closed:
+-            self._raise_closed()
+-        return self._accessor.open(self, flags, mode)
+ 
+     # Public API
+ 
+@@ -1082,8 +933,7 @@
+         """
+         if self._closed:
+             self._raise_closed()
+-        return io.open(str(self), mode, buffering, encoding, errors, newline,
+-                       opener=self._opener)
++        return io.open(str(self), mode, buffering, encoding)                    ###
+ 
+     def touch(self, mode=0o666, exist_ok=True):
+         """
+@@ -1096,17 +946,14 @@
+             # Implementation note: GNU touch uses the UTIME_NOW option of
+             # the utimensat() / futimens() functions.
+             try:
+-                self._accessor.utime(self, None)
++                self.stat()                                                     ###
+             except OSError:
+                 # Avoid exception chaining
+                 pass
+             else:
+                 return
+-        flags = os.O_CREAT | os.O_WRONLY
+-        if not exist_ok:
+-            flags |= os.O_EXCL
+-        fd = self._raw_open(flags, mode)
+-        os.close(fd)
++        with self.open('w'):                                                    ###
++            pass                                                                ###
+ 
+     def mkdir(self, mode=0o777, parents=False):
+         if self._closed:
+@@ -1117,7 +964,7 @@
+             try:
+                 self._accessor.mkdir(self, mode)
+             except OSError as e:
+-                if e.errno != ENOENT:
++                if e.args and e.args[0] != ENOENT:                              ###
+                     raise
+                 self.parent.mkdir(parents=True)
+                 self._accessor.mkdir(self, mode)
+@@ -1200,7 +1047,7 @@
+         try:
+             self.stat()
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             return False
+         return True
+@@ -1212,7 +1059,7 @@
+         try:
+             return S_ISDIR(self.stat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist or is a broken symlink
+             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+@@ -1226,7 +1073,7 @@
+         try:
+             return S_ISREG(self.stat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist or is a broken symlink
+             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+@@ -1239,7 +1086,7 @@
+         try:
+             return S_ISLNK(self.lstat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist
+             return False
+@@ -1251,7 +1098,7 @@
+         try:
+             return S_ISBLK(self.stat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist or is a broken symlink
+             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+@@ -1264,7 +1111,7 @@
+         try:
+             return S_ISCHR(self.stat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist or is a broken symlink
+             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+@@ -1277,7 +1124,7 @@
+         try:
+             return S_ISFIFO(self.stat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist or is a broken symlink
+             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+@@ -1290,7 +1137,7 @@
+         try:
+             return S_ISSOCK(self.stat().st_mode)
+         except OSError as e:
+-            if e.errno not in (ENOENT, ENOTDIR):
++            if e_errno_not_in_ENOENT_ENOTDIR(e):                                ###
+                 raise
+             # Path doesn't exist or is a broken symlink
+             # (see https://bitbucket.org/pitrou/pathlib/issue/12/)
+@@ -1300,5 +1147,4 @@
+ class PosixPath(Path, PurePosixPath):
+     __slots__ = ()
+ 
+-class WindowsPath(Path, PureWindowsPath):
+-    __slots__ = ()
++

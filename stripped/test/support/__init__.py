@@ -6,6 +6,8 @@ import shutil
 import sys
 import unittest
 UnicodeDecodeError = UnicodeError                                               ###
+FileNotFoundError = OSError                                                     ###
+NotADirectoryError = OSError                                                    ###
 
 def import_module(name, deprecated=False, *, required_on=()):
         try:
@@ -23,19 +25,19 @@ if True:                                                                        
 def unlink(filename):
     try:
         _unlink(filename)
-    except OSError:                                                             ###
+    except (FileNotFoundError, NotADirectoryError):
         pass
 
 def rmdir(dirname):
     try:
         _rmdir(dirname)
-    except OSError:                                                             ###
+    except FileNotFoundError:
         pass
 
 def rmtree(path):
     try:
         _rmtree(path)
-    except OSError:                                                             ###
+    except FileNotFoundError:
         pass
 
 TESTFN = '$test'                                                                ###
@@ -211,6 +213,29 @@ def temp_cwd(name='tempcwd', quiet=False):
     with temp_dir(path=name, quiet=quiet) as temp_path:
         with change_cwd(temp_path, quiet=quiet) as cwd_dir:
             yield cwd_dir
+
+# TEST_HOME_DIR refers to the top level directory of the "test" package
+# that contains Python's regression test suite
+TEST_SUPPORT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_HOME_DIR = os.path.dirname(TEST_SUPPORT_DIR)
+
+def findfile(filename, subdir=None):
+    """Try to find a file on sys.path or in the test directory.  If it is not
+    found the argument passed to the function is returned (this does not
+    necessarily signal failure; could still be the legitimate path).
+
+    Setting *subdir* indicates a relative path to use to find the file
+    rather than looking directly in the path directories.
+    """
+    if os.path.isabs(filename):
+        return filename
+    if subdir is not None:
+        filename = os.path.join(subdir, filename)
+    path = [TEST_HOME_DIR] + sys.path
+    for dn in path:
+        fn = os.path.join(dn, filename)
+        if os.path.exists(fn): return fn
+    return filename
 
 @contextlib.contextmanager
 def swap_attr(obj, attr, new_val):

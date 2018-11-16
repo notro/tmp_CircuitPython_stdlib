@@ -1,0 +1,8 @@
+--- <CPython-3.4.9>/test/test_json/test_default.py
++++ lib/test/test_json/test_default.py
+@@ -9,4 +9,4 @@
+ 
+ 
+ class TestPyDefault(TestDefault, PyTest): pass
+-class TestCDefault(TestDefault, CTest): pass
++

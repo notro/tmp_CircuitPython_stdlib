@@ -1,0 +1,21 @@
+--- <CPython-3.4.9>/test/test_json/test_scanstring.py
++++ lib/test/test_json/test_scanstring.py
+@@ -1,5 +1,5 @@
+ import sys
+-from test.test_json import PyTest, CTest
++from test.test_json import PyTest                                               ###
+ 
+ 
+ class TestScanstring:
+@@ -132,10 +132,6 @@
+             with self.assertRaises(ValueError, msg=s):
+                 scanstring(s, 1, True)
+ 
+-    def test_overflow(self):
+-        with self.assertRaises(OverflowError):
+-            self.json.decoder.scanstring(b"xxx", sys.maxsize+1)
+-
+ 
+ class TestPyScanstring(TestScanstring, PyTest): pass
+-class TestCScanstring(TestScanstring, CTest): pass
++

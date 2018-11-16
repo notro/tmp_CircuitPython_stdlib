@@ -1,0 +1,17 @@
+--- <CPython-3.4.9>/test/test_json/test_float.py
++++ lib/test/test_json/test_float.py
+@@ -4,7 +4,7 @@
+ 
+ class TestFloat:
+     def test_floats(self):
+-        for num in [1617161771.7650001, math.pi, math.pi**100, math.pi**-100, 3.1]:
++        for num in [161.765, 3.14159, 3.1]:                                     ###
+             self.assertEqual(float(self.dumps(num)), num)
+             self.assertEqual(self.loads(self.dumps(num)), num)
+ 
+@@ -30,4 +30,4 @@
+ 
+ 
+ class TestPyFloat(TestFloat, PyTest): pass
+-class TestCFloat(TestFloat, CTest): pass
++

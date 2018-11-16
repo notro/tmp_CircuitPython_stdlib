@@ -76,10 +76,11 @@
          self.raise_catch(SystemExit, "SystemExit")
          self.assertRaises(SystemExit, sys.exit, 0)
  
-@@ -117,367 +79,6 @@
+@@ -116,147 +78,6 @@
+         self.raise_catch(Exception, "Exception")
          try: x = 1/0
          except Exception as e: pass
- 
+-
 -    def testSyntaxErrorMessage(self):
 -        # make sure the right exception message is raised for each of
 -        # these code fragments
@@ -220,40 +221,41 @@
 -        code = 3765269347
 -        with self.assertRaisesRegex(OSError, 'Windows Error 0x%x' % code):
 -            ctypes.pythonapi.PyErr_SetFromWindowsErr(code)
--
--    def testAttributes(self):
--        # test that exception attributes are happy
--
--        exceptionList = [
--            (BaseException, (), {'args' : ()}),
--            (BaseException, (1, ), {'args' : (1,)}),
--            (BaseException, ('foo',),
--                {'args' : ('foo',)}),
--            (BaseException, ('foo', 1),
--                {'args' : ('foo', 1)}),
+ 
+     def testAttributes(self):
+         # test that exception attributes are happy
+@@ -268,90 +89,31 @@
+                 {'args' : ('foo',)}),
+             (BaseException, ('foo', 1),
+                 {'args' : ('foo', 1)}),
 -            (SystemExit, ('foo',),
 -                {'args' : ('foo',), 'code' : 'foo'}),
--            (OSError, ('foo',),
--                {'args' : ('foo',), 'filename' : None, 'filename2' : None,
+             (OSError, ('foo',),
+                 {'args' : ('foo',), 'filename' : None, 'filename2' : None,
 -                 'errno' : None, 'strerror' : None}),
--            (OSError, ('foo', 'bar'),
++                 'strerror' : None}),                                           ### CircuitPython sets errno when len(args) > 0
+             (OSError, ('foo', 'bar'),
+                 {'args' : ('foo', 'bar'),
+                  'filename' : None, 'filename2' : None,
+                  'errno' : 'foo', 'strerror' : 'bar'}),
+             (OSError, ('foo', 'bar', 'baz'),
 -                {'args' : ('foo', 'bar'),
--                 'filename' : None, 'filename2' : None,
--                 'errno' : 'foo', 'strerror' : 'bar'}),
--            (OSError, ('foo', 'bar', 'baz'),
--                {'args' : ('foo', 'bar'),
--                 'filename' : 'baz', 'filename2' : None,
--                 'errno' : 'foo', 'strerror' : 'bar'}),
--            (OSError, ('foo', 'bar', 'baz', None, 'quux'),
++                {                                                               ### CPython trims args for backwards compatibility
+                  'filename' : 'baz', 'filename2' : None,
+                  'errno' : 'foo', 'strerror' : 'bar'}),
+             (OSError, ('foo', 'bar', 'baz', None, 'quux'),
 -                {'args' : ('foo', 'bar'), 'filename' : 'baz', 'filename2': 'quux'}),
--            (OSError, ('errnoStr', 'strErrorStr', 'filenameStr'),
++                {'filename' : 'baz', 'filename2': 'quux'}),                     ###
+             (OSError, ('errnoStr', 'strErrorStr', 'filenameStr'),
 -                {'args' : ('errnoStr', 'strErrorStr'),
--                 'strerror' : 'strErrorStr', 'errno' : 'errnoStr',
--                 'filename' : 'filenameStr'}),
--            (OSError, (1, 'strErrorStr', 'filenameStr'),
++                {                                                               ###
+                  'strerror' : 'strErrorStr', 'errno' : 'errnoStr',
+                  'filename' : 'filenameStr'}),
+             (OSError, (1, 'strErrorStr', 'filenameStr'),
 -                {'args' : (1, 'strErrorStr'), 'errno' : 1,
--                 'strerror' : 'strErrorStr',
--                 'filename' : 'filenameStr', 'filename2' : None}),
++                {'errno' : 1,                                                   ###
+                  'strerror' : 'strErrorStr',
+                  'filename' : 'filenameStr', 'filename2' : None}),
 -            (SyntaxError, (), {'msg' : None, 'text' : None,
 -                'filename' : None, 'lineno' : None, 'offset' : None,
 -                'print_file_and_line' : None}),
@@ -275,7 +277,7 @@
 -                           'textStr', 'print_file_and_lineStr'),
 -                 'print_file_and_line' : None, 'msg' : 'msgStr',
 -                 'filename' : None, 'lineno' : None, 'offset' : None}),
--            (UnicodeError, (), {'args' : (),}),
+             (UnicodeError, (), {'args' : (),}),
 -            (UnicodeEncodeError, ('ascii', 'a', 0, 1,
 -                                  'ordinal not in range'),
 -                {'args' : ('ascii', 'a', 0, 1,
@@ -298,11 +300,11 @@
 -                {'args' : ('\u3042', 0, 1, 'ouch'),
 -                 'object' : '\u3042', 'reason' : 'ouch',
 -                 'start' : 0, 'end' : 1}),
--            (NaiveException, ('foo',),
--                {'args': ('foo',), 'x': 'foo'}),
+             (NaiveException, ('foo',),
+                 {'args': ('foo',), 'x': 'foo'}),
 -            (SlottedNaiveException, ('foo',),
 -                {'args': ('foo',), 'x': 'foo'}),
--        ]
+         ]
 -        try:
 -            # More tests are in test_WindowsError
 -            exceptionList.append(
@@ -315,26 +317,23 @@
 -        except NameError:
 -            pass
 -
--        for exc, args, expected in exceptionList:
--            try:
--                e = exc(*args)
--            except:
--                print("\nexc=%r, args=%r" % (exc, args), file=sys.stderr)
--                raise
--            else:
+         for exc, args, expected in exceptionList:
+             try:
+                 e = exc(*args)
+@@ -359,9 +121,6 @@
+                 print("\nexc=%r, args=%r" % (exc, args), file=sys.stderr)
+                 raise
+             else:
 -                # Verify module name
 -                if not type(e).__name__.endswith('NaiveException'):
 -                    self.assertEqual(type(e).__module__, 'builtins')
--                # Verify no ref leaks in Exc_str()
--                s = str(e)
--                for checkArgName in expected:
--                    value = getattr(e, checkArgName)
--                    self.assertEqual(repr(value),
--                                     repr(expected[checkArgName]),
--                                     '%r.%s == %r, expected %r' % (
--                                     e, checkArgName,
--                                     value, expected[checkArgName]))
--
+                 # Verify no ref leaks in Exc_str()
+                 s = str(e)
+                 for checkArgName in expected:
+@@ -372,112 +131,6 @@
+                                      e, checkArgName,
+                                      value, expected[checkArgName]))
+ 
 -                # test for pickling support
 -                for p in [pickle]:
 -                    for protocol in range(p.HIGHEST_PROTOCOL + 1):
@@ -444,7 +443,7 @@
      def testInfiniteRecursion(self):
          def f():
              return f()
-@@ -506,122 +107,6 @@
+@@ -506,122 +159,6 @@
              del e
          self.assertNotIn('e', locals())
  
@@ -567,7 +566,7 @@
      def test_exception_target_in_nested_scope(self):
          # issue 4617: This used to raise a SyntaxError
          # "can not delete variable 'e' referenced in nested scope"
-@@ -632,36 +117,6 @@
+@@ -632,36 +169,6 @@
          except Exception as e:
              print_error()
              # implicit "del e" here
@@ -604,7 +603,7 @@
  
      def test_generator_leaking2(self):
          # See issue 12475.
-@@ -747,295 +202,16 @@
+@@ -747,295 +254,16 @@
              except RuntimeError:
                  return next(gen)
          run_gen()

@@ -1,0 +1,35 @@
+--- <CPython-3.4.9>/test/test_json/test_recursion.py
++++ lib/test/test_json/test_recursion.py
+@@ -65,26 +65,6 @@
+             self.fail("didn't raise ValueError on default recursion")
+ 
+ 
+-    def test_highly_nested_objects_decoding(self):
+-        # test that loading highly-nested objects doesn't segfault when C
+-        # accelerations are used. See #12017
+-        with self.assertRaises(RuntimeError):
+-            self.loads('{"a":' * 100000 + '1' + '}' * 100000)
+-        with self.assertRaises(RuntimeError):
+-            self.loads('{"a":' * 100000 + '[1]' + '}' * 100000)
+-        with self.assertRaises(RuntimeError):
+-            self.loads('[' * 100000 + '1' + ']' * 100000)
+-
+-    def test_highly_nested_objects_encoding(self):
+-        # See #12051
+-        l, d = [], {}
+-        for x in range(100000):
+-            l, d = [l], {'k':d}
+-        with self.assertRaises(RuntimeError):
+-            self.dumps(l)
+-        with self.assertRaises(RuntimeError):
+-            self.dumps(d)
+-
+     def test_endless_recursion(self):
+         # See #12051
+         class EndlessJSONEncoder(self.json.JSONEncoder):
+@@ -97,4 +77,4 @@
+ 
+ 
+ class TestPyRecursion(TestRecursion, PyTest): pass
+-class TestCRecursion(TestRecursion, CTest): pass
++

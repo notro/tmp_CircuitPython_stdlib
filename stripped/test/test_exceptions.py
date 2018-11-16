@@ -79,6 +79,58 @@ class ExceptionTests(unittest.TestCase):
         try: x = 1/0
         except Exception as e: pass
 
+    def testAttributes(self):
+        # test that exception attributes are happy
+
+        exceptionList = [
+            (BaseException, (), {'args' : ()}),
+            (BaseException, (1, ), {'args' : (1,)}),
+            (BaseException, ('foo',),
+                {'args' : ('foo',)}),
+            (BaseException, ('foo', 1),
+                {'args' : ('foo', 1)}),
+            (OSError, ('foo',),
+                {'args' : ('foo',), 'filename' : None, 'filename2' : None,
+                 'strerror' : None}),                                           ### CircuitPython sets errno when len(args) > 0
+            (OSError, ('foo', 'bar'),
+                {'args' : ('foo', 'bar'),
+                 'filename' : None, 'filename2' : None,
+                 'errno' : 'foo', 'strerror' : 'bar'}),
+            (OSError, ('foo', 'bar', 'baz'),
+                {                                                               ### CPython trims args for backwards compatibility
+                 'filename' : 'baz', 'filename2' : None,
+                 'errno' : 'foo', 'strerror' : 'bar'}),
+            (OSError, ('foo', 'bar', 'baz', None, 'quux'),
+                {'filename' : 'baz', 'filename2': 'quux'}),                     ###
+            (OSError, ('errnoStr', 'strErrorStr', 'filenameStr'),
+                {                                                               ###
+                 'strerror' : 'strErrorStr', 'errno' : 'errnoStr',
+                 'filename' : 'filenameStr'}),
+            (OSError, (1, 'strErrorStr', 'filenameStr'),
+                {'errno' : 1,                                                   ###
+                 'strerror' : 'strErrorStr',
+                 'filename' : 'filenameStr', 'filename2' : None}),
+            (UnicodeError, (), {'args' : (),}),
+            (NaiveException, ('foo',),
+                {'args': ('foo',), 'x': 'foo'}),
+        ]
+        for exc, args, expected in exceptionList:
+            try:
+                e = exc(*args)
+            except:
+                print("\nexc=%r, args=%r" % (exc, args), file=sys.stderr)
+                raise
+            else:
+                # Verify no ref leaks in Exc_str()
+                s = str(e)
+                for checkArgName in expected:
+                    value = getattr(e, checkArgName)
+                    self.assertEqual(repr(value),
+                                     repr(expected[checkArgName]),
+                                     '%r.%s == %r, expected %r' % (
+                                     e, checkArgName,
+                                     value, expected[checkArgName]))
+
     def testInfiniteRecursion(self):
         def f():
             return f()

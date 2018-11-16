@@ -142,6 +142,8 @@ class TestResult(object):
         """Converts a sys.exc_info()-style tuple of values into a string."""
         exctype, value, tb = err
         # Skip test runner traceback levels
+        while tb and self._is_relevant_tb_level(tb):
+            tb = tb.tb_next
 
         if exctype is test.failureException:
             # Skip assert*() traceback levels
@@ -154,7 +156,8 @@ class TestResult(object):
 
 
     def _is_relevant_tb_level(self, tb):
-        return '__unittest' in tb.tb_frame.f_globals
+        filename = tb.tb_frame.f_code.co_filename                               ###
+        return '/unittest/' in filename and not '/unittest/test/' in filename   ###
 
     def _count_relevant_tb_levels(self, tb):
         length = 0

@@ -1,0 +1,47 @@
+--- <CPython-3.4.9>/json/scanner.py
++++ lib/json/scanner.py
+@@ -6,11 +6,35 @@
+ except ImportError:
+     c_make_scanner = None
+ 
+-__all__ = ['make_scanner']
+ 
+-NUMBER_RE = re.compile(
+-    r'(-?(?:0|[1-9]\d*))(\.\d+)?([eE][-+]?\d+)?',
+-    (re.VERBOSE | re.MULTILINE | re.DOTALL))
++class Match:                                                                    ###
++    def __init__(self, end, groups):                                            ###
++        self._end = end                                                         ###
++        self._groups = groups                                                   ###
++    def end(self):                                                              ###
++        return self._end                                                        ###
++    def groups(self):                                                           ###
++        return self._groups                                                     ###
++class NUMBER_RE:                                                                ###
++    REGEX = re.compile(r'(-?(?:0|[1-9]\d*))(\.\d+)?([eE][-+]?\d+)?')            ###
++    CHARS = ['-', '+', '.', 'e', 'E'] + [chr(i) for i in range(ord('0'), ord('9') + 1)]  ###
++    def match(s, pos):                                                          ###
++        i = pos                                                                 ###
++        try:                                                                    ###
++            while True:                                                         ###
++                if s[i] not in NUMBER_RE.CHARS:                                 ###
++                    break                                                       ###
++                i += 1                                                          ###
++        except IndexError:                                                      ###
++            pass                                                                ###
++        if i == pos:                                                            ###
++            return None                                                         ###
++        res = NUMBER_RE.REGEX.match(s[pos:i])                                   ###
++        if not res:                                                             ###
++            return None                                                         ###
++        end = pos + len(res.group(0))                                           ###
++        return Match(end, (res.group(1), res.group(2), res.group(3)))           ###
++                                                                                ###
+ 
+ def py_make_scanner(context):
+     parse_object = context.parse_object
+@@ -71,3 +95,4 @@
+     return _scan_once
+ 
+ make_scanner = c_make_scanner or py_make_scanner
++

@@ -1,0 +1,817 @@
+--- <CPython-3.4.9>/zipfile.py
++++ lib/zipfile.py
+@@ -5,36 +5,18 @@
+ """
+ import io
+ import os
+-import re
+-import importlib.util
+ import sys
+-import time
++import _time as time                                                            ### Save 2k
+ import stat
+-import shutil
+ import struct
+ import binascii
+ 
+ 
+-try:
+-    import zlib # We may need its compression method
+-    crc32 = zlib.crc32
+-except ImportError:
+-    zlib = None
+-    crc32 = binascii.crc32
+-
+-try:
+-    import bz2 # We may need its compression method
+-except ImportError:
+-    bz2 = None
+-
+-try:
+-    import lzma # We may need its compression method
+-except ImportError:
+-    lzma = None
+-
+-__all__ = ["BadZipFile", "BadZipfile", "error",
+-           "ZIP_STORED", "ZIP_DEFLATED", "ZIP_BZIP2", "ZIP_LZMA",
+-           "is_zipfile", "ZipInfo", "ZipFile", "PyZipFile", "LargeZipFile"]
++crc32 = binascii.crc32                                                          ###
++zlib = None                                                                     ###
++bz2 = None                                                                      ###
++lzma = None                                                                     ###
++
+ 
+ class BadZipFile(Exception):
+     pass
+@@ -46,7 +28,6 @@
+     and those extensions are disabled.
+     """
+ 
+-error = BadZipfile = BadZipFile      # Pre-3.2 compatibility names
+ 
+ 
+ ZIP64_LIMIT = (1 << 31) - 1
+@@ -291,27 +272,6 @@
+ class ZipInfo (object):
+     """Class with attributes describing each file in the ZIP archive."""
+ 
+-    __slots__ = (
+-        'orig_filename',
+-        'filename',
+-        'date_time',
+-        'compress_type',
+-        'comment',
+-        'extra',
+-        'create_system',
+-        'create_version',
+-        'extract_version',
+-        'reserved',
+-        'flag_bits',
+-        'volume',
+-        'internal_attr',
+-        'external_attr',
+-        'header_offset',
+-        'CRC',
+-        'compress_size',
+-        'file_size',
+-        '_raw_time',
+-    )
+ 
+     def __init__(self, filename="NoName", date_time=(1980,1,1,0,0,0)):
+         self.orig_filename = filename   # Original file name in archive
+@@ -444,137 +404,7 @@
+             extra = extra[ln+4:]
+ 
+ 
+-class _ZipDecrypter:
+-    """Class to handle decryption of files stored within a ZIP archive.
+-
+-    ZIP supports a password-based form of encryption. Even though known
+-    plaintext attacks have been found against it, it is still useful
+-    to be able to get data out of such a file.
+-
+-    Usage:
+-        zd = _ZipDecrypter(mypwd)
+-        plain_char = zd(cypher_char)
+-        plain_text = map(zd, cypher_text)
+-    """
+-
+-    def _GenerateCRCTable():
+-        """Generate a CRC-32 table.
+-
+-        ZIP encryption uses the CRC32 one-byte primitive for scrambling some
+-        internal keys. We noticed that a direct implementation is faster than
+-        relying on binascii.crc32().
+-        """
+-        poly = 0xedb88320
+-        table = [0] * 256
+-        for i in range(256):
+-            crc = i
+-            for j in range(8):
+-                if crc & 1:
+-                    crc = ((crc >> 1) & 0x7FFFFFFF) ^ poly
+-                else:
+-                    crc = ((crc >> 1) & 0x7FFFFFFF)
+-            table[i] = crc
+-        return table
+-    crctable = None
+-
+-    def _crc32(self, ch, crc):
+-        """Compute the CRC32 primitive on one byte."""
+-        return ((crc >> 8) & 0xffffff) ^ self.crctable[(crc ^ ch) & 0xff]
+-
+-    def __init__(self, pwd):
+-        if _ZipDecrypter.crctable is None:
+-            _ZipDecrypter.crctable = _ZipDecrypter._GenerateCRCTable()
+-        self.key0 = 305419896
+-        self.key1 = 591751049
+-        self.key2 = 878082192
+-        for p in pwd:
+-            self._UpdateKeys(p)
+-
+-    def _UpdateKeys(self, c):
+-        self.key0 = self._crc32(c, self.key0)
+-        self.key1 = (self.key1 + (self.key0 & 255)) & 4294967295
+-        self.key1 = (self.key1 * 134775813 + 1) & 4294967295
+-        self.key2 = self._crc32((self.key1 >> 24) & 255, self.key2)
+-
+-    def __call__(self, c):
+-        """Decrypt a single character."""
+-        assert isinstance(c, int)
+-        k = self.key2 | 2
+-        c = c ^ (((k * (k^1)) >> 8) & 255)
+-        self._UpdateKeys(c)
+-        return c
+-
+-
+-class LZMACompressor:
+-
+-    def __init__(self):
+-        self._comp = None
+-
+-    def _init(self):
+-        props = lzma._encode_filter_properties({'id': lzma.FILTER_LZMA1})
+-        self._comp = lzma.LZMACompressor(lzma.FORMAT_RAW, filters=[
+-            lzma._decode_filter_properties(lzma.FILTER_LZMA1, props)
+-        ])
+-        return struct.pack('<BBH', 9, 4, len(props)) + props
+-
+-    def compress(self, data):
+-        if self._comp is None:
+-            return self._init() + self._comp.compress(data)
+-        return self._comp.compress(data)
+-
+-    def flush(self):
+-        if self._comp is None:
+-            return self._init() + self._comp.flush()
+-        return self._comp.flush()
+-
+-
+-class LZMADecompressor:
+-
+-    def __init__(self):
+-        self._decomp = None
+-        self._unconsumed = b''
+-        self.eof = False
+-
+-    def decompress(self, data):
+-        if self._decomp is None:
+-            self._unconsumed += data
+-            if len(self._unconsumed) <= 4:
+-                return b''
+-            psize, = struct.unpack('<H', self._unconsumed[2:4])
+-            if len(self._unconsumed) <= 4 + psize:
+-                return b''
+-
+-            self._decomp = lzma.LZMADecompressor(lzma.FORMAT_RAW, filters=[
+-                lzma._decode_filter_properties(lzma.FILTER_LZMA1,
+-                                               self._unconsumed[4:4 + psize])
+-            ])
+-            data = self._unconsumed[4 + psize:]
+-            del self._unconsumed
+-
+-        result = self._decomp.decompress(data)
+-        self.eof = self._decomp.eof
+-        return result
+-
+-
+-compressor_names = {
+-    0: 'store',
+-    1: 'shrink',
+-    2: 'reduce',
+-    3: 'reduce',
+-    4: 'reduce',
+-    5: 'reduce',
+-    6: 'implode',
+-    7: 'tokenize',
+-    8: 'deflate',
+-    9: 'deflate64',
+-    10: 'implode',
+-    12: 'bzip2',
+-    14: 'lzma',
+-    18: 'terse',
+-    19: 'lz77',
+-    97: 'wavpack',
+-    98: 'ppmd',
+-}
++
+ 
+ def _check_compression(compression):
+     if compression == ZIP_STORED:
+@@ -596,35 +426,154 @@
+ 
+ 
+ def _get_compressor(compress_type):
+-    if compress_type == ZIP_DEFLATED:
+-        return zlib.compressobj(zlib.Z_DEFAULT_COMPRESSION,
+-                                zlib.DEFLATED, -15)
+-    elif compress_type == ZIP_BZIP2:
+-        return bz2.BZ2Compressor()
+-    elif compress_type == ZIP_LZMA:
+-        return LZMACompressor()
+-    else:
+-        return None
++    _check_compression(compress_type)                                           ###
++    return None                                                                 ###
+ 
+ 
+ def _get_decompressor(compress_type):
+-    if compress_type == ZIP_STORED:
+-        return None
+-    elif compress_type == ZIP_DEFLATED:
+-        return zlib.decompressobj(-15)
+-    elif compress_type == ZIP_BZIP2:
+-        return bz2.BZ2Decompressor()
+-    elif compress_type == ZIP_LZMA:
+-        return LZMADecompressor()
+-    else:
+-        descr = compressor_names.get(compress_type)
+-        if descr:
+-            raise NotImplementedError("compression type %d (%s)" % (compress_type, descr))
+-        else:
+-            raise NotImplementedError("compression type %d" % (compress_type,))
+-
+-
+-class ZipExtFile(io.BufferedIOBase):
++    _check_compression(compress_type)                                           ###
++    return None                                                                 ###
++
++
++# Copied from _collections_abc.py                                               ###
++try:                                                                            ###
++    UnsupportedOperation = io.UnsupportedOperation                              ###
++except AttributeError:                                                          ###
++    class UnsupportedOperation(OSError):                                        ###
++        pass                                                                    ###
++                                                                                ###
++class IOBase:                                                                   ###
++                                                                                ###
++    def _unsupported(self, name):                                               ###
++        raise UnsupportedOperation("%s.%s() not supported" %                    ###
++                                   (self.__class__.__name__, name))             ###
++                                                                                ###
++    def seek(self, pos, whence=0):                                              ###
++        self._unsupported("seek")                                               ###
++                                                                                ###
++    def tell(self):                                                             ###
++        return self.seek(0, 1)                                                  ###
++                                                                                ###
++    def truncate(self, pos=None):                                               ###
++        self._unsupported("truncate")                                           ###
++                                                                                ###
++    def flush(self):                                                            ###
++        self._checkClosed()                                                     ###
++                                                                                ###
++    __closed = False                                                            ###
++                                                                                ###
++    def close(self):                                                            ###
++        if not self.__closed:                                                   ###
++            try:                                                                ###
++                self.flush()                                                    ###
++            finally:                                                            ###
++                self.__closed = True                                            ###
++                                                                                ###
++    def __del__(self):                                                          ###
++        try:                                                                    ###
++            self.close()                                                        ###
++        except:                                                                 ###
++            pass                                                                ###
++                                                                                ###
++    def seekable(self):                                                         ###
++        return False                                                            ###
++                                                                                ###
++    def writable(self):                                                         ###
++        return False                                                            ###
++                                                                                ###
++    @property                                                                   ###
++    def closed(self):                                                           ###
++        return self.__closed                                                    ###
++                                                                                ###
++    def _checkClosed(self, msg=None):                                           ###
++        if self.closed:                                                         ###
++            raise ValueError("I/O operation on closed file."                    ###
++                             if msg is None else msg)                           ###
++                                                                                ###
++    def __enter__(self):                                                        ###
++        self._checkClosed()                                                     ###
++        return self                                                             ###
++                                                                                ###
++    def __exit__(self, *args):                                                  ###
++        self.close()                                                            ###
++                                                                                ###
++    def readline(self, size=-1):                                                ###
++        if hasattr(self, "peek"):                                               ###
++            def nreadahead():                                                   ###
++                readahead = self.peek(1)                                        ###
++                if not readahead:                                               ###
++                    return 1                                                    ###
++                n = (readahead.find(b"\n") + 1) or len(readahead)               ###
++                if size >= 0:                                                   ###
++                    n = min(n, size)                                            ###
++                return n                                                        ###
++        else:                                                                   ###
++            def nreadahead():                                                   ###
++                return 1                                                        ###
++        if size is None:                                                        ###
++            size = -1                                                           ###
++        elif not isinstance(size, int):                                         ###
++            raise TypeError("size must be an integer")                          ###
++        res = bytearray()                                                       ###
++        while size < 0 or len(res) < size:                                      ###
++            b = self.read(nreadahead())                                         ###
++            if not b:                                                           ###
++                break                                                           ###
++            res += b                                                            ###
++#            if res.endswith(b"\n"):                                            ###
++            if res[-1] == ord('\n'):                                            ###
++                break                                                           ###
++        return bytes(res)                                                       ###
++                                                                                ###
++    def __iter__(self):                                                         ###
++        self._checkClosed()                                                     ###
++        return self                                                             ###
++                                                                                ###
++    def __next__(self):                                                         ###
++        line = self.readline()                                                  ###
++        if not line:                                                            ###
++            raise StopIteration                                                 ###
++        return line                                                             ###
++                                                                                ###
++    def readlines(self, hint=None):                                             ###
++        if hint is None or hint <= 0:                                           ###
++            return list(self)                                                   ###
++        n = 0                                                                   ###
++        lines = []                                                              ###
++        for line in self:                                                       ###
++            lines.append(line)                                                  ###
++            n += len(line)                                                      ###
++            if n >= hint:                                                       ###
++                break                                                           ###
++        return lines                                                            ###
++                                                                                ###
++    def writelines(self, lines):                                                ###
++        self._checkClosed()                                                     ###
++        for line in lines:                                                      ###
++            self.write(line)                                                    ###
++                                                                                ###
++                                                                                ###
++class BufferedIOBase(IOBase):                                                   ###
++                                                                                ###
++    def readinto(self, b):                                                      ###
++        data = self.read(len(b))                                                ###
++        n = len(data)                                                           ###
++        try:                                                                    ###
++            b[:n] = data                                                        ###
++        except TypeError as err:                                                ###
++            import array                                                        ###
++            if not isinstance(b, array.array):                                  ###
++                raise err                                                       ###
++            b[:n] = array.array('b', data)                                      ###
++        return n                                                                ###
++                                                                                ###
++    def write(self, b):                                                         ###
++        self._unsupported("write")                                              ###
++                                                                                ###
++    def detach(self):                                                           ###
++        self._unsupported("detach")                                             ###
++                                                                                ###
++class ZipExtFile(BufferedIOBase):                                               ###
+     """File-like object for reading an archive member.
+        Is returned by ZipFile.open().
+     """
+@@ -635,8 +584,7 @@
+     # Read from compressed files in 4k blocks.
+     MIN_READ_SIZE = 4096
+ 
+-    # Search for universal newlines or line chunks.
+-    PATTERN = re.compile(br'^(?P<chunk>[^\r\n]+)|(?P<newline>\n|\r\n?)')
++# MicroPython doesn't support this regex and universal newlines is removed in 3.6, so drop it. ###
+ 
+     def __init__(self, fileobj, mode, zipinfo, decrypter=None,
+                  close_fileobj=False):
+@@ -654,7 +602,6 @@
+         self._readbuffer = b''
+         self._offset = 0
+ 
+-        self._universal = 'U' in mode
+         self.newlines = None
+ 
+         # Adjust read size for encrypted files since the first 12 bytes
+@@ -677,7 +624,7 @@
+         If limit is specified, at most limit bytes will be read.
+         """
+ 
+-        if not self._universal and limit < 0:
++        if limit < 0:                                                           ###
+             # Shortcut common case - newline found in buffer.
+             i = self._readbuffer.find(b'\n', self._offset) + 1
+             if i > 0:
+@@ -685,41 +632,7 @@
+                 self._offset = i
+                 return line
+ 
+-        if not self._universal:
+-            return io.BufferedIOBase.readline(self, limit)
+-
+-        line = b''
+-        while limit < 0 or len(line) < limit:
+-            readahead = self.peek(2)
+-            if readahead == b'':
+-                return line
+-
+-            #
+-            # Search for universal newlines or line chunks.
+-            #
+-            # The pattern returns either a line chunk or a newline, but not
+-            # both. Combined with peek(2), we are assured that the sequence
+-            # '\r\n' is always retrieved completely and never split into
+-            # separate newlines - '\r', '\n' due to coincidental readaheads.
+-            #
+-            match = self.PATTERN.search(readahead)
+-            newline = match.group('newline')
+-            if newline is not None:
+-                if self.newlines is None:
+-                    self.newlines = []
+-                if newline not in self.newlines:
+-                    self.newlines.append(newline)
+-                self._offset += len(newline)
+-                return line + b'\n'
+-
+-            chunk = match.group('chunk')
+-            if limit >= 0:
+-                chunk = chunk[: limit - len(line)]
+-
+-            self._offset += len(chunk)
+-            line += chunk
+-
+-        return line
++        return BufferedIOBase.readline(self, limit)                             ###
+ 
+     def peek(self, n=1):
+         """Returns buffered bytes without advancing the position."""
+@@ -894,7 +807,6 @@
+     """
+ 
+     fp = None                   # Set here since __del__ checks it
+-    _windows_illegal_name_trans_table = None
+ 
+     def __init__(self, file, mode="r", compression=ZIP_STORED, allowZip64=True):
+         """Open the ZIP file with mode read "r", write "w" or append "a"."""
+@@ -1055,6 +967,8 @@
+         return self.filelist
+ 
+     def printdir(self, file=None):
++        if file is None:                                                        ###
++            file = sys.stdout                                                   ###
+         """Print a table of contents for the zip file."""
+         print("%-46s %19s %12s" % ("File Name", "Modified    ", "Size"),
+               file=file)
+@@ -1122,9 +1036,7 @@
+         if mode not in ("r", "U", "rU"):
+             raise RuntimeError('open() requires mode "r", "U", or "rU"')
+         if 'U' in mode:
+-            import warnings
+-            warnings.warn("'U' mode is deprecated",
+-                          DeprecationWarning, 2)
++            raise NotImplementedError("'U' mode is deprecated and not implemented")  ###
+         if pwd and not isinstance(pwd, bytes):
+             raise TypeError("pwd: expected bytes, got %s" % type(pwd))
+         if not self.fp:
+@@ -1183,28 +1095,7 @@
+             is_encrypted = zinfo.flag_bits & 0x1
+             zd = None
+             if is_encrypted:
+-                if not pwd:
+-                    pwd = self.pwd
+-                if not pwd:
+-                    raise RuntimeError("File %s is encrypted, password "
+-                                       "required for extraction" % name)
+-
+-                zd = _ZipDecrypter(pwd)
+-                # The first 12 bytes in the cypher stream is an encryption header
+-                #  used to strengthen the algorithm. The first 11 bytes are
+-                #  completely random, while the 12th contains the MSB of the CRC,
+-                #  or the MSB of the file time depending on the header type
+-                #  and is used to check the correctness of the password.
+-                header = zef_file.read(12)
+-                h = list(map(zd, header[0:12]))
+-                if zinfo.flag_bits & 0x8:
+-                    # compare against the file type from extended local headers
+-                    check_byte = (zinfo._raw_time >> 8) & 0xff
+-                else:
+-                    # compare against the CRC otherwise
+-                    check_byte = (zinfo.CRC >> 24) & 0xff
+-                if h[11] != check_byte:
+-                    raise RuntimeError("Bad password for file", name)
++                raise NotImplementedError('File %s is encrypted, this is not implemented' % name)  ###
+ 
+             return ZipExtFile(zef_file, mode, zinfo, zd,
+                               close_fileobj=not self._filePassed)
+@@ -1239,21 +1130,6 @@
+         for zipinfo in members:
+             self.extract(zipinfo, path, pwd)
+ 
+-    @classmethod
+-    def _sanitize_windows_name(cls, arcname, pathsep):
+-        """Replace bad characters and remove trailing dots from parts."""
+-        table = cls._windows_illegal_name_trans_table
+-        if not table:
+-            illegal = ':<>|"?*'
+-            table = str.maketrans(illegal, '_' * len(illegal))
+-            cls._windows_illegal_name_trans_table = table
+-        arcname = arcname.translate(table)
+-        # remove trailing dots
+-        arcname = (x.rstrip('.') for x in arcname.split(pathsep))
+-        # rejoin, removing empty parts.
+-        arcname = pathsep.join(x for x in arcname if x)
+-        return arcname
+-
+     def _extract_member(self, member, targetpath, pwd):
+         """Extract the ZipInfo object 'member' to a physical
+            file on the path targetpath.
+@@ -1270,10 +1146,6 @@
+         invalid_path_parts = ('', os.path.curdir, os.path.pardir)
+         arcname = os.path.sep.join(x for x in arcname.split(os.path.sep)
+                                    if x not in invalid_path_parts)
+-        if os.path.sep == '\\':
+-            # filter illegal characters on Windows
+-            arcname = self._sanitize_windows_name(arcname, os.path.sep)
+-
+         targetpath = os.path.join(targetpath, arcname)
+         targetpath = os.path.normpath(targetpath)
+ 
+@@ -1289,7 +1161,11 @@
+ 
+         with self.open(member, pwd=pwd) as source, \
+              open(targetpath, "wb") as target:
+-            shutil.copyfileobj(source, target)
++            while 1:                                                            ### Open code to save on shutil import cost
++                buf = source.read(128)                                          ###
++                if not buf:                                                     ###
++                    break                                                       ###
++                target.write(buf)                                               ###
+ 
+         return targetpath
+ 
+@@ -1375,7 +1251,7 @@
+             self.fp.write(zinfo.FileHeader(zip64))
+             file_size = 0
+             while 1:
+-                buf = fp.read(1024 * 8)
++                buf = fp.read(256)                                              ###
+                 if not buf:
+                     break
+                 file_size = file_size + len(buf)
+@@ -1582,231 +1458,4 @@
+                 fp.close()
+ 
+ 
+-class PyZipFile(ZipFile):
+-    """Class to create ZIP archives with Python library files and packages."""
+-
+-    def __init__(self, file, mode="r", compression=ZIP_STORED,
+-                 allowZip64=True, optimize=-1):
+-        ZipFile.__init__(self, file, mode=mode, compression=compression,
+-                         allowZip64=allowZip64)
+-        self._optimize = optimize
+-
+-    def writepy(self, pathname, basename="", filterfunc=None):
+-        """Add all files from "pathname" to the ZIP archive.
+-
+-        If pathname is a package directory, search the directory and
+-        all package subdirectories recursively for all *.py and enter
+-        the modules into the archive.  If pathname is a plain
+-        directory, listdir *.py and enter all modules.  Else, pathname
+-        must be a Python *.py file and the module will be put into the
+-        archive.  Added modules are always module.pyo or module.pyc.
+-        This method will compile the module.py into module.pyc if
+-        necessary.
+-        If filterfunc(pathname) is given, it is called with every argument.
+-        When it is False, the file or directory is skipped.
+-        """
+-        if filterfunc and not filterfunc(pathname):
+-            if self.debug:
+-                label = 'path' if os.path.isdir(pathname) else 'file'
+-                print('%s "%s" skipped by filterfunc' % (label, pathname))
+-            return
+-        dir, name = os.path.split(pathname)
+-        if os.path.isdir(pathname):
+-            initname = os.path.join(pathname, "__init__.py")
+-            if os.path.isfile(initname):
+-                # This is a package directory, add it
+-                if basename:
+-                    basename = "%s/%s" % (basename, name)
+-                else:
+-                    basename = name
+-                if self.debug:
+-                    print("Adding package in", pathname, "as", basename)
+-                fname, arcname = self._get_codename(initname[0:-3], basename)
+-                if self.debug:
+-                    print("Adding", arcname)
+-                self.write(fname, arcname)
+-                dirlist = os.listdir(pathname)
+-                dirlist.remove("__init__.py")
+-                # Add all *.py files and package subdirectories
+-                for filename in dirlist:
+-                    path = os.path.join(pathname, filename)
+-                    root, ext = os.path.splitext(filename)
+-                    if os.path.isdir(path):
+-                        if os.path.isfile(os.path.join(path, "__init__.py")):
+-                            # This is a package directory, add it
+-                            self.writepy(path, basename,
+-                                         filterfunc=filterfunc)  # Recursive call
+-                    elif ext == ".py":
+-                        if filterfunc and not filterfunc(path):
+-                            if self.debug:
+-                                print('file "%s" skipped by filterfunc' % path)
+-                            continue
+-                        fname, arcname = self._get_codename(path[0:-3],
+-                                                            basename)
+-                        if self.debug:
+-                            print("Adding", arcname)
+-                        self.write(fname, arcname)
+-            else:
+-                # This is NOT a package directory, add its files at top level
+-                if self.debug:
+-                    print("Adding files from directory", pathname)
+-                for filename in os.listdir(pathname):
+-                    path = os.path.join(pathname, filename)
+-                    root, ext = os.path.splitext(filename)
+-                    if ext == ".py":
+-                        if filterfunc and not filterfunc(path):
+-                            if self.debug:
+-                                print('file "%s" skipped by filterfunc' % path)
+-                            continue
+-                        fname, arcname = self._get_codename(path[0:-3],
+-                                                            basename)
+-                        if self.debug:
+-                            print("Adding", arcname)
+-                        self.write(fname, arcname)
+-        else:
+-            if pathname[-3:] != ".py":
+-                raise RuntimeError(
+-                    'Files added with writepy() must end with ".py"')
+-            fname, arcname = self._get_codename(pathname[0:-3], basename)
+-            if self.debug:
+-                print("Adding file", arcname)
+-            self.write(fname, arcname)
+-
+-    def _get_codename(self, pathname, basename):
+-        """Return (filename, archivename) for the path.
+-
+-        Given a module name path, return the correct file path and
+-        archive name, compiling if necessary.  For example, given
+-        /python/lib/string, return (/python/lib/string.pyc, string).
+-        """
+-        def _compile(file, optimize=-1):
+-            import py_compile
+-            if self.debug:
+-                print("Compiling", file)
+-            try:
+-                py_compile.compile(file, doraise=True, optimize=optimize)
+-            except py_compile.PyCompileError as err:
+-                print(err.msg)
+-                return False
+-            return True
+-
+-        file_py  = pathname + ".py"
+-        file_pyc = pathname + ".pyc"
+-        file_pyo = pathname + ".pyo"
+-        pycache_pyc = importlib.util.cache_from_source(file_py, True)
+-        pycache_pyo = importlib.util.cache_from_source(file_py, False)
+-        if self._optimize == -1:
+-            # legacy mode: use whatever file is present
+-            if (os.path.isfile(file_pyo) and
+-                os.stat(file_pyo).st_mtime >= os.stat(file_py).st_mtime):
+-                # Use .pyo file.
+-                arcname = fname = file_pyo
+-            elif (os.path.isfile(file_pyc) and
+-                  os.stat(file_pyc).st_mtime >= os.stat(file_py).st_mtime):
+-                # Use .pyc file.
+-                arcname = fname = file_pyc
+-            elif (os.path.isfile(pycache_pyc) and
+-                  os.stat(pycache_pyc).st_mtime >= os.stat(file_py).st_mtime):
+-                # Use the __pycache__/*.pyc file, but write it to the legacy pyc
+-                # file name in the archive.
+-                fname = pycache_pyc
+-                arcname = file_pyc
+-            elif (os.path.isfile(pycache_pyo) and
+-                  os.stat(pycache_pyo).st_mtime >= os.stat(file_py).st_mtime):
+-                # Use the __pycache__/*.pyo file, but write it to the legacy pyo
+-                # file name in the archive.
+-                fname = pycache_pyo
+-                arcname = file_pyo
+-            else:
+-                # Compile py into PEP 3147 pyc file.
+-                if _compile(file_py):
+-                    fname = (pycache_pyc if __debug__ else pycache_pyo)
+-                    arcname = (file_pyc if __debug__ else file_pyo)
+-                else:
+-                    fname = arcname = file_py
+-        else:
+-            # new mode: use given optimization level
+-            if self._optimize == 0:
+-                fname = pycache_pyc
+-                arcname = file_pyc
+-            else:
+-                fname = pycache_pyo
+-                arcname = file_pyo
+-            if not (os.path.isfile(fname) and
+-                    os.stat(fname).st_mtime >= os.stat(file_py).st_mtime):
+-                if not _compile(file_py, optimize=self._optimize):
+-                    fname = arcname = file_py
+-        archivename = os.path.split(arcname)[1]
+-        if basename:
+-            archivename = "%s/%s" % (basename, archivename)
+-        return (fname, archivename)
+-
+-
+-def main(args = None):
+-    import textwrap
+-    USAGE=textwrap.dedent("""\
+-        Usage:
+-            zipfile.py -l zipfile.zip        # Show listing of a zipfile
+-            zipfile.py -t zipfile.zip        # Test if a zipfile is valid
+-            zipfile.py -e zipfile.zip target # Extract zipfile into target dir
+-            zipfile.py -c zipfile.zip src ... # Create zipfile from sources
+-        """)
+-    if args is None:
+-        args = sys.argv[1:]
+-
+-    if not args or args[0] not in ('-l', '-c', '-e', '-t'):
+-        print(USAGE)
+-        sys.exit(1)
+-
+-    if args[0] == '-l':
+-        if len(args) != 2:
+-            print(USAGE)
+-            sys.exit(1)
+-        with ZipFile(args[1], 'r') as zf:
+-            zf.printdir()
+-
+-    elif args[0] == '-t':
+-        if len(args) != 2:
+-            print(USAGE)
+-            sys.exit(1)
+-        with ZipFile(args[1], 'r') as zf:
+-            badfile = zf.testzip()
+-        if badfile:
+-            print("The following enclosed file is corrupted: {!r}".format(badfile))
+-        print("Done testing")
+-
+-    elif args[0] == '-e':
+-        if len(args) != 3:
+-            print(USAGE)
+-            sys.exit(1)
+-
+-        with ZipFile(args[1], 'r') as zf:
+-            zf.extractall(args[2])
+-
+-    elif args[0] == '-c':
+-        if len(args) < 3:
+-            print(USAGE)
+-            sys.exit(1)
+-
+-        def addToZip(zf, path, zippath):
+-            if os.path.isfile(path):
+-                zf.write(path, zippath, ZIP_DEFLATED)
+-            elif os.path.isdir(path):
+-                if zippath:
+-                    zf.write(path, zippath)
+-                for nm in os.listdir(path):
+-                    addToZip(zf,
+-                             os.path.join(path, nm), os.path.join(zippath, nm))
+-            # else: ignore
+-
+-        with ZipFile(args[1], 'w') as zf:
+-            for path in args[2:]:
+-                zippath = os.path.basename(path)
+-                if not zippath:
+-                    zippath = os.path.basename(os.path.dirname(path))
+-                if zippath in ('', os.curdir, os.pardir):
+-                    zippath = ''
+-                addToZip(zf, path, zippath)
+-
+-if __name__ == "__main__":
+-    main()
++
