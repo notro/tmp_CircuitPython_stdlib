@@ -1197,48 +1197,48 @@ test case
                 self.assertRaisesRegex, Exception, 'x',
                 lambda: None)
 
-#    def testAssertRaisesRegexInvalidRegex(self):
-#        # Issue 20145.
-#        class MyExc(Exception):
-#            pass
-#        self.assertRaises(TypeError, self.assertRaisesRegex, MyExc, lambda: True)
-#
+    def testAssertRaisesRegexInvalidRegex(self):
+        # Issue 20145.
+        class MyExc(Exception):
+            pass
+        self.assertRaises(TypeError, self.assertRaisesRegex, MyExc, lambda: True)
+
 #    def testAssertWarnsRegexInvalidRegex(self):
 #        # Issue 20145.
 #        class MyWarn(Warning):
 #            pass
 #        self.assertRaises(TypeError, self.assertWarnsRegex, MyWarn, lambda: True)
 #
-#    def testAssertRaisesRegexMismatch(self):
-#        def Stub():
-#            raise Exception('Unexpected')
-#
-#        self.assertRaisesRegex(
-#                self.failureException,
-#                r'"\^Expected\$" does not match "Unexpected"',
-#                self.assertRaisesRegex, Exception, '^Expected$',
-#                Stub)
+    def testAssertRaisesRegexMismatch(self):
+        def Stub():
+            raise Exception('Unexpected')
+
+        self.assertRaisesRegex(
+                self.failureException,
+                r'"\^Expected\$" does not match "Unexpected"',
+                self.assertRaisesRegex, Exception, '^Expected$',
+                Stub)
 #        self.assertRaisesRegex(
 #                self.failureException,
 #                r'"\^Expected\$" does not match "Unexpected"',
 #                self.assertRaisesRegex, Exception,
 #                re.compile('^Expected$'), Stub)
-#
-#    def testAssertRaisesExcValue(self):
-#        class ExceptionMock(Exception):
-#            pass
-#
-#        def Stub(foo):
-#            raise ExceptionMock(foo)
-#        v = "particular value"
-#
-#        ctx = self.assertRaises(ExceptionMock)
-#        with ctx:
-#            Stub(v)
-#        e = ctx.exception
-#        self.assertIsInstance(e, ExceptionMock)
-#        self.assertEqual(e.args[0], v)
-#
+
+    def testAssertRaisesExcValue(self):
+        class ExceptionMock(Exception):
+            pass
+
+        def Stub(foo):
+            raise ExceptionMock(foo)
+        v = "particular value"
+
+        ctx = self.assertRaises(ExceptionMock)
+        with ctx:
+            Stub(v)
+        e = ctx.exception
+        self.assertIsInstance(e, ExceptionMock)
+        self.assertEqual(e.args[0], v)
+
 #    def testAssertWarnsCallable(self):
 #        def _runtime_warn():
 #            warnings.warn("foo", RuntimeWarning)

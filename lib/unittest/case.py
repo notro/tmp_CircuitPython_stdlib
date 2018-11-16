@@ -151,6 +151,7 @@ class _AssertRaisesBaseContext(_BaseTestCaseContext):
                 self.obj_name = str(callable_obj)
         else:
             self.obj_name = None
+        self.org_expected_regex = expected_regex                                ### ure.pattern is not supported
         if expected_regex is not None:
             expected_regex = re.compile(expected_regex)
         self.expected_regex = expected_regex
@@ -201,7 +202,7 @@ class _AssertRaisesContext(_AssertRaisesBaseContext):
         if not expected_regex.search(str(exc_value)):
             self._raiseFailure('"{}" does not match "{}"'.format(
 #                     expected_regex.pattern, str(exc_value)))
-                     expected_regex, str(exc_value)))                           ###
+                     self.org_expected_regex, str(exc_value)))                  ###
         return True
 
 
