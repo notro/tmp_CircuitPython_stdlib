@@ -75,12 +75,16 @@ def find_files(fork, src, args):
     files = []
     for (dirpath, dirnames, filenames) in os.walk(fork):
         for filename in filenames:
-            if any(ext for ext in ['.mpy', '.zip', '.tar'] if os.path.splitext(filename)[1] == ext):
+#            if any(ext for ext in ['.mpy', '.zip', '.tar'] if os.path.splitext(filename)[1] == ext):
+#                continue
+            if os.path.splitext(filename)[1] != '.py':
+                if args.verbose > 1 and os.path.splitext(filename)[1] != '.mpy':
+                    sys.stdout.write('SKIP support file: {}\n'.format(filename))
                 continue
 
             if filename[-4].isdigit() or os.path.exists(os.path.join(dirpath, filename[:-3] + '2.py')):
                 if args.verbose > 1:
-                    sys.stdout.write('Skip split file: {}\n'.format(filename))
+                    sys.stdout.write('SKIP split file: {}\n'.format(filename))
                 continue
 
             if args.filter and args.filter not in filename:

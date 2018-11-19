@@ -80,7 +80,7 @@
      def _is_relevant_tb_level(self, tb):
 -        return '__unittest' in tb.tb_frame.f_globals
 +        filename = tb.tb_frame.f_code.co_filename                               ###
-+        return '/unittest/' in filename and not '/unittest/test/' in filename   ###
++        return '/unittest/' in filename and '/unittest/test/' not in filename   ###
  
      def _count_relevant_tb_levels(self, tb):
          length = 0

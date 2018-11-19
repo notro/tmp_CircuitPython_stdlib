@@ -1,0 +1,16 @@
+--- <CPython-3.4.9>/colorsys.py
++++ lib/colorsys.py
+@@ -21,8 +21,6 @@
+ # http://en.wikipedia.org/wiki/HLS_color_space
+ # http://en.wikipedia.org/wiki/HSV_color_space
+ 
+-__all__ = ["rgb_to_yiq","yiq_to_rgb","rgb_to_hls","hls_to_rgb",
+-           "rgb_to_hsv","hsv_to_rgb"]
+ 
+ # Some floating point constants
+ 
+@@ -162,3 +160,4 @@
+     if i == 5:
+         return v, p, q
+     # Cannot get here
++

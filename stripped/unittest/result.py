@@ -157,7 +157,7 @@ class TestResult(object):
 
     def _is_relevant_tb_level(self, tb):
         filename = tb.tb_frame.f_code.co_filename                               ###
-        return '/unittest/' in filename and not '/unittest/test/' in filename   ###
+        return '/unittest/' in filename and '/unittest/test/' not in filename   ###
 
     def _count_relevant_tb_levels(self, tb):
         length = 0

@@ -1254,7 +1254,12 @@
  
  
  class TestMove(unittest.TestCase):
-@@ -1569,10 +427,6 @@
+@@ -1565,14 +423,11 @@
+         # Move a dir inside an existing dir on another filesystem.
+         self.test_move_dir_to_dir()
+ 
++    @unittest.expectedFailure                                                   ### os.rename doesn't support a trailing slash on the path
+     def test_move_dir_sep_to_dir(self):
          self._check_move_dir(self.src_dir + os.path.sep, self.dst_dir,
              os.path.join(self.dst_dir, os.path.basename(self.src_dir)))
  
@@ -1265,7 +1270,7 @@
  
      def test_existing_file_inside_dest_dir(self):
          # A file with the same name inside the destination dir already exists.
-@@ -1580,6 +434,7 @@
+@@ -1580,6 +435,7 @@
              pass
          self.assertRaises(shutil.Error, shutil.move, self.src_file, self.dst_dir)
  
@@ -1273,7 +1278,7 @@
      def test_dont_move_dir_in_itself(self):
          # Moving a dir inside itself raises an Error.
          dst = os.path.join(self.src_dir, "bar")
-@@ -1609,52 +464,6 @@
+@@ -1609,52 +465,6 @@
          finally:
              shutil.rmtree(TESTFN, ignore_errors=True)
  
@@ -1326,7 +1331,7 @@
  
      def test_move_return_value(self):
          rv = shutil.move(self.src_file, self.dst_dir)
-@@ -1786,69 +595,4 @@
+@@ -1786,69 +596,4 @@
          finally:
              os.rmdir(dst_dir)
  

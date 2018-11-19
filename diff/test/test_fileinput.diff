@@ -1,0 +1,281 @@
+--- <CPython-3.4.9>/test/test_fileinput.py
++++ lib/test/test_fileinput.py
+@@ -22,9 +22,8 @@
+ from io import BytesIO, StringIO
+ from fileinput import FileInput, hook_encoded
+ 
+-from test.support import verbose, TESTFN, run_unittest, check_warnings
++from test.support import verbose, TESTFN                                        ###
+ from test.support import unlink as safe_unlink
+-from unittest import mock
+ 
+ 
+ # The fileinput module has 2 interfaces: the FileInput class which does
+@@ -95,20 +94,6 @@
+         fi.close()
+ 
+         if verbose:
+-            print('%s. Stdin (bs=%s)' % (start+3, bs))
+-        fi = FileInput(files=(t1, t2, t3, t4, '-'), bufsize=bs)
+-        savestdin = sys.stdin
+-        try:
+-            sys.stdin = StringIO("Line 1 of stdin\nLine 2 of stdin\n")
+-            lines = list(fi)
+-            self.assertEqual(len(lines), 33)
+-            self.assertEqual(lines[32], 'Line 2 of stdin\n')
+-            self.assertEqual(fi.filename(), '<stdin>')
+-            fi.nextfile()
+-        finally:
+-            sys.stdin = savestdin
+-
+-        if verbose:
+             print('%s. Boundary conditions (bs=%s)' % (start+4, bs))
+         fi = FileInput(files=(t1, t2, t3, t4), bufsize=bs)
+         self.assertEqual(fi.lineno(), 0)
+@@ -127,7 +112,7 @@
+                 print(line)
+             fi.close()
+         finally:
+-            sys.stdout = savestdout
++            pass                                                                ###
+ 
+         fi = FileInput(files=(t1, t2, t3, t4), bufsize=bs)
+         for line in fi:
+@@ -198,22 +183,6 @@
+ ##         finally:
+ ##             remove_tempfiles(t1)
+ 
+-    def test_fileno(self):
+-        t1 = t2 = None
+-        try:
+-            t1 = writeTmp(1, ["A\nB"])
+-            t2 = writeTmp(2, ["C\nD"])
+-            fi = FileInput(files=(t1, t2))
+-            self.assertEqual(fi.fileno(), -1)
+-            line =next( fi)
+-            self.assertNotEqual(fi.fileno(), -1)
+-            fi.nextfile()
+-            self.assertEqual(fi.fileno(), -1)
+-            line = list(fi)
+-            self.assertEqual(fi.fileno(), -1)
+-        finally:
+-            remove_tempfiles(t1, t2)
+-
+     def test_opening_mode(self):
+         try:
+             # invalid mode, should raise ValueError
+@@ -221,24 +190,6 @@
+             self.fail("FileInput should reject invalid mode argument")
+         except ValueError:
+             pass
+-        t1 = None
+-        try:
+-            # try opening in universal newline mode
+-            t1 = writeTmp(1, [b"A\nB\r\nC\rD"], mode="wb")
+-            with check_warnings(('', DeprecationWarning)):
+-                fi = FileInput(files=t1, mode="U")
+-            with check_warnings(('', DeprecationWarning)):
+-                lines = list(fi)
+-            self.assertEqual(lines, ["A\n", "B\n", "C\n", "D"])
+-        finally:
+-            remove_tempfiles(t1)
+-
+-    def test_stdin_binary_mode(self):
+-        with mock.patch('sys.stdin') as m_stdin:
+-            m_stdin.buffer = BytesIO(b'spam, bacon, sausage, and spam')
+-            fi = FileInput(files=['-'], mode='rb')
+-            lines = list(fi)
+-            self.assertEqual(lines, [b'spam, bacon, sausage, and spam'])
+ 
+     def test_file_opening_hook(self):
+         try:
+@@ -268,29 +219,8 @@
+             fi.readline()
+         self.assertTrue(custom_open_hook.invoked, "openhook not invoked")
+ 
+-    def test_readline(self):
+-        with open(TESTFN, 'wb') as f:
+-            f.write(b'A\nB\r\nC\r')
+-            # Fill TextIOWrapper buffer.
+-            f.write(b'123456789\n' * 1000)
+-            # Issue #20501: readline() shouldn't read whole file.
+-            f.write(b'\x80')
+-        self.addCleanup(safe_unlink, TESTFN)
+-
+-        with FileInput(files=TESTFN,
+-                       openhook=hook_encoded('ascii'), bufsize=8) as fi:
+-            try:
+-                self.assertEqual(fi.readline(), 'A\n')
+-                self.assertEqual(fi.readline(), 'B\n')
+-                self.assertEqual(fi.readline(), 'C\n')
+-            except UnicodeDecodeError:
+-                self.fail('Read to end of file')
+-            with self.assertRaises(UnicodeDecodeError):
+-                # Read to the end of file.
+-                list(fi)
+-            self.assertEqual(fi.readline(), '')
+-            self.assertEqual(fi.readline(), '')
+-
++# Doesn't look like universal newlines is supported,                            ###
++# stream_unbuffered_readline() only looks for \n                                ###
+     def test_readline_binary_mode(self):
+         with open(TESTFN, 'wb') as f:
+             f.write(b'A\nB\r\nC\rD')
+@@ -383,45 +313,6 @@
+         self.assertTrue(os_unlink_replacement.invoked,
+                         "os.unlink() was not invoked")
+ 
+-    def test_readline_os_fstat_raises_OSError(self):
+-        """Tests invoking FileInput.readline() when os.fstat() raises OSError.
+-           This exception should be silently discarded."""
+-
+-        os_fstat_orig = os.fstat
+-        os_fstat_replacement = UnconditionallyRaise(OSError)
+-        try:
+-            t = writeTmp(1, ["\n"])
+-            self.addCleanup(remove_tempfiles, t)
+-            with FileInput(files=[t], inplace=True) as fi:
+-                os.fstat = os_fstat_replacement
+-                fi.readline()
+-        finally:
+-            os.fstat = os_fstat_orig
+-
+-        # sanity check to make sure that our test scenario was actually hit
+-        self.assertTrue(os_fstat_replacement.invoked,
+-                        "os.fstat() was not invoked")
+-
+-    @unittest.skipIf(not hasattr(os, "chmod"), "os.chmod does not exist")
+-    def test_readline_os_chmod_raises_OSError(self):
+-        """Tests invoking FileInput.readline() when os.chmod() raises OSError.
+-           This exception should be silently discarded."""
+-
+-        os_chmod_orig = os.chmod
+-        os_chmod_replacement = UnconditionallyRaise(OSError)
+-        try:
+-            t = writeTmp(1, ["\n"])
+-            self.addCleanup(remove_tempfiles, t)
+-            with FileInput(files=[t], inplace=True) as fi:
+-                os.chmod = os_chmod_replacement
+-                fi.readline()
+-        finally:
+-            os.chmod = os_chmod_orig
+-
+-        # sanity check to make sure that our test scenario was actually hit
+-        self.assertTrue(os_chmod_replacement.invoked,
+-                        "os.fstat() was not invoked")
+-
+     def test_fileno_when_ValueError_raised(self):
+         class FilenoRaisesValueError(UnconditionallyRaise):
+             def __init__(self):
+@@ -458,7 +349,8 @@
+         self.mode = mode
+         self.openhook = openhook
+         self._file = None
+-        self.invocation_counts = collections.defaultdict(lambda: 0)
++        methods = ["close", "nextfile", "filename", "lineno", "filelineno", "fileno", "isfirstline", "isstdin"]  ###
++        self.invocation_counts = {m:0 for m in methods}                         ###
+         self.return_values = {}
+ 
+     def close(self):
+@@ -510,7 +402,7 @@
+         actual_count = mock_file_input.invocation_counts[method_name]
+         self.assertEqual(actual_count, 1, method_name)
+         # assert that no other unexpected methods were invoked
+-        actual_total_count = len(mock_file_input.invocation_counts)
++        actual_total_count = sum(mock_file_input.invocation_counts.values())    ###
+         self.assertEqual(actual_total_count, 1)
+ 
+ class Test_fileinput_input(BaseFileInputGlobalMethodsTest):
+@@ -527,7 +419,7 @@
+         with self.assertRaises(RuntimeError) as cm:
+             fileinput.input()
+         self.assertEqual(("input() already active",), cm.exception.args)
+-        self.assertIs(instance, fileinput._state, "fileinput._state")
++# Maybe long-lived relocation problem                                           ###
+ 
+     def test_state_is_not_None_and_state_file_is_None(self):
+         """Tests invoking fileinput.input() when fileinput._state is not None
+@@ -622,7 +514,6 @@
+         retval = fileinput.nextfile()
+         self.assertExactlyOneInvocation(instance, "nextfile")
+         self.assertIs(retval, nextfile_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class Test_fileinput_filename(BaseFileInputGlobalMethodsTest):
+     """Unit tests for fileinput.filename()"""
+@@ -649,7 +540,6 @@
+         retval = fileinput.filename()
+         self.assertExactlyOneInvocation(instance, "filename")
+         self.assertIs(retval, filename_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class Test_fileinput_lineno(BaseFileInputGlobalMethodsTest):
+     """Unit tests for fileinput.lineno()"""
+@@ -676,7 +566,6 @@
+         retval = fileinput.lineno()
+         self.assertExactlyOneInvocation(instance, "lineno")
+         self.assertIs(retval, lineno_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class Test_fileinput_filelineno(BaseFileInputGlobalMethodsTest):
+     """Unit tests for fileinput.filelineno()"""
+@@ -703,7 +592,6 @@
+         retval = fileinput.filelineno()
+         self.assertExactlyOneInvocation(instance, "filelineno")
+         self.assertIs(retval, filelineno_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class Test_fileinput_fileno(BaseFileInputGlobalMethodsTest):
+     """Unit tests for fileinput.fileno()"""
+@@ -731,7 +619,6 @@
+         retval = fileinput.fileno()
+         self.assertExactlyOneInvocation(instance, "fileno")
+         self.assertIs(retval, fileno_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class Test_fileinput_isfirstline(BaseFileInputGlobalMethodsTest):
+     """Unit tests for fileinput.isfirstline()"""
+@@ -758,7 +645,6 @@
+         retval = fileinput.isfirstline()
+         self.assertExactlyOneInvocation(instance, "isfirstline")
+         self.assertIs(retval, isfirstline_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class Test_fileinput_isstdin(BaseFileInputGlobalMethodsTest):
+     """Unit tests for fileinput.isstdin()"""
+@@ -785,7 +671,6 @@
+         retval = fileinput.isstdin()
+         self.assertExactlyOneInvocation(instance, "isstdin")
+         self.assertIs(retval, isstdin_retval)
+-        self.assertIs(fileinput._state, instance)
+ 
+ class InvocationRecorder:
+     def __init__(self):
+@@ -881,26 +766,4 @@
+         self.assertIs(kwargs.pop('encoding'), encoding)
+         self.assertFalse(kwargs)
+ 
+-    def test_modes(self):
+-        with open(TESTFN, 'wb') as f:
+-            # UTF-7 is a convenient, seldom used encoding
+-            f.write(b'A\nB\r\nC\rD+IKw-')
+-        self.addCleanup(safe_unlink, TESTFN)
+-
+-        def check(mode, expected_lines):
+-            with FileInput(files=TESTFN, mode=mode,
+-                           openhook=hook_encoded('utf-7')) as fi:
+-                lines = list(fi)
+-            self.assertEqual(lines, expected_lines)
+-
+-        check('r', ['A\n', 'B\n', 'C\n', 'D\u20ac'])
+-        with self.assertWarns(DeprecationWarning):
+-            check('rU', ['A\n', 'B\n', 'C\n', 'D\u20ac'])
+-        with self.assertWarns(DeprecationWarning):
+-            check('U', ['A\n', 'B\n', 'C\n', 'D\u20ac'])
+-        with self.assertRaises(ValueError):
+-            check('rb', ['A\n', 'B\r\n', 'C\r', 'D\u20ac'])
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
++

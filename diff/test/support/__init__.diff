@@ -823,11 +823,10 @@
  
  def findfile(filename, subdir=None):
      """Try to find a file on sys.path or in the test directory.  If it is not
-@@ -987,1001 +237,6 @@
-         if os.path.exists(fn): return fn
+@@ -988,999 +238,11 @@
      return filename
  
--def create_empty_file(filename):
+ def create_empty_file(filename):
 -    """Create an empty file. If the file already exists, truncate it."""
 -    fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
 -    os.close(fd)
@@ -1821,11 +1820,15 @@
 -            if started:
 -                faulthandler.dump_traceback(sys.stdout)
 -                raise AssertionError('Unable to join %d threads' % len(started))
--
++    try:                                                                        ###
++        os.unlink(filename)                                                     ###
++    except OSError:                                                             ###
++        pass                                                                    ###
++    open(filename, 'w').close()                                                 ###
+ 
  @contextlib.contextmanager
  def swap_attr(obj, attr, new_val):
-     """Temporary swap out an attribute with a new object.
-@@ -2036,228 +291,9 @@
+@@ -2036,228 +298,9 @@
          finally:
              del obj[item]
  
@@ -2055,7 +2058,7 @@
      # check that 'attr_name' is a real attribute for 'object_to_patch'
      # will raise AttributeError if it does not exist
      getattr(object_to_patch, attr_name)
-@@ -2273,10 +309,7 @@
+@@ -2273,10 +316,7 @@
  
      # restore the value when the test is done
      def cleanup():
@@ -2066,7 +2069,7 @@
  
      test_instance.addCleanup(cleanup)
  
-@@ -2284,21 +317,4 @@
+@@ -2284,21 +324,4 @@
      setattr(object_to_patch, attr_name, new_value)
  
  

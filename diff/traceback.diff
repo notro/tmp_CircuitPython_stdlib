@@ -162,15 +162,7 @@
      yield "{}: {}\n".format(stype, msg)
  
  def _format_final_exc_line(etype, value):
-@@ -247,67 +147,11 @@
-     except:
-         return '<unprintable %s object>' % type(value).__name__
- 
--def print_exc(limit=None, file=None, chain=True):
--    """Shorthand for 'print_exception(*sys.exc_info(), limit, file)'."""
--    print_exception(*sys.exc_info(), limit=limit, file=file, chain=chain)
--
- def format_exc(limit=None, chain=True):
+@@ -255,59 +155,7 @@
      """Like print_exc() but return a string."""
      return "".join(format_exception(*sys.exc_info(), limit=limit, chain=chain))
  

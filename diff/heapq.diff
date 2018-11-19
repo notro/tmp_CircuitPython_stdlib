@@ -1,0 +1,129 @@
+--- <CPython-3.4.9>/heapq.py
++++ lib/heapq.py
+@@ -124,10 +124,8 @@
+ From all times, sorting has always been a Great Art! :-)
+ """
+ 
+-__all__ = ['heappush', 'heappop', 'heapify', 'heapreplace', 'merge',
+-           'nlargest', 'nsmallest', 'heappushpop']
+-
+-from itertools import islice, count, tee, chain
++
++from itertools import islice, count, chain                                      ###
+ 
+ def heappush(heap, item):
+     """Push item onto heap, maintaining the heap invariant."""
+@@ -360,11 +358,13 @@
+     _heappop, _heapreplace, _StopIteration = heappop, heapreplace, StopIteration
+     _len = len
+ 
++    __self__ = {}                                                               ###
+     h = []
+     h_append = h.append
+     for itnum, it in enumerate(map(iter, iterables)):
+         try:
+             next = it.__next__
++            __self__[next.__func__] = it                                        ###
+             h_append([next(), itnum, next])
+         except _StopIteration:
+             pass
+@@ -383,94 +383,15 @@
+         # fast case when only a single iterator remains
+         v, itnum, next = h[0]
+         yield v
+-        yield from next.__self__
++        yield from __self__[next.__func__]                                      ###
+ 
+ # Extend the implementations of nsmallest and nlargest to use a key= argument
+ _nsmallest = nsmallest
+ def nsmallest(n, iterable, key=None):
+-    """Find the n smallest elements in a dataset.
+-
+-    Equivalent to:  sorted(iterable, key=key)[:n]
+-    """
+-    # Short-cut for n==1 is to use min() when len(iterable)>0
+-    if n == 1:
+-        it = iter(iterable)
+-        head = list(islice(it, 1))
+-        if not head:
+-            return []
+-        if key is None:
+-            return [min(chain(head, it))]
+-        return [min(chain(head, it), key=key)]
+-
+-    # When n>=size, it's faster to use sorted()
+-    try:
+-        size = len(iterable)
+-    except (TypeError, AttributeError):
+-        pass
+-    else:
+-        if n >= size:
+-            return sorted(iterable, key=key)[:n]
+-
+-    # When key is none, use simpler decoration
+-    if key is None:
+-        it = zip(iterable, count())                         # decorate
+-        result = _nsmallest(n, it)
+-        return [r[0] for r in result]                       # undecorate
+-
+-    # General case, slowest method
+-    in1, in2 = tee(iterable)
+-    it = zip(map(key, in1), count(), in2)                   # decorate
+-    result = _nsmallest(n, it)
+-    return [r[2] for r in result]                           # undecorate
++    raise NotImplementedError('itertools.tee is missing')                       ###
+ 
+ _nlargest = nlargest
+ def nlargest(n, iterable, key=None):
+-    """Find the n largest elements in a dataset.
+-
+-    Equivalent to:  sorted(iterable, key=key, reverse=True)[:n]
+-    """
+-
+-    # Short-cut for n==1 is to use max() when len(iterable)>0
+-    if n == 1:
+-        it = iter(iterable)
+-        head = list(islice(it, 1))
+-        if not head:
+-            return []
+-        if key is None:
+-            return [max(chain(head, it))]
+-        return [max(chain(head, it), key=key)]
+-
+-    # When n>=size, it's faster to use sorted()
+-    try:
+-        size = len(iterable)
+-    except (TypeError, AttributeError):
+-        pass
+-    else:
+-        if n >= size:
+-            return sorted(iterable, key=key, reverse=True)[:n]
+-
+-    # When key is none, use simpler decoration
+-    if key is None:
+-        it = zip(iterable, count(0,-1))                     # decorate
+-        result = _nlargest(n, it)
+-        return [r[0] for r in result]                       # undecorate
+-
+-    # General case, slowest method
+-    in1, in2 = tee(iterable)
+-    it = zip(map(key, in1), count(0,-1), in2)               # decorate
+-    result = _nlargest(n, it)
+-    return [r[2] for r in result]                           # undecorate
+-
+-if __name__ == "__main__":
+-    # Simple sanity test
+-    heap = []
+-    data = [1, 3, 5, 7, 9, 2, 4, 6, 8, 0]
+-    for item in data:
+-        heappush(heap, item)
+-    sort = []
+-    while heap:
+-        sort.append(heappop(heap))
+-    print(sort)
+-
+-    import doctest
+-    doctest.testmod()
++    raise NotImplementedError('itertools.tee is missing')                       ###
++
++

@@ -300,3 +300,72 @@ class TestMktemp(BaseTestCase):
 # We test _TemporaryFileWrapper by testing NamedTemporaryFile.
 
 
+class TestNamedTemporaryFile(BaseTestCase):
+    """Test NamedTemporaryFile()."""
+
+    def do_create(self, dir=None, pre="", suf="", delete=True):
+        if dir is None:
+            dir = tempfile.gettempdir()
+        file = tempfile.NamedTemporaryFile(dir=dir, prefix=pre, suffix=suf,
+                                           delete=delete)
+
+        self.nameCheck(file.name, dir, pre, suf)
+        return file
+
+
+    def test_basic(self):
+        # NamedTemporaryFile can create files
+        self.do_create()
+        self.do_create(pre="a")
+        self.do_create(suf="b")
+        self.do_create(pre="a", suf="b")
+        self.do_create(pre="aa", suf=".txt")
+
+    @unittest.skip('HANGS')                                                     ###
+    def test_iter(self):
+        # Issue #23700: getting iterator from a temporary file should keep
+        # it alive as long as it's being iterated over
+        lines = [b'spam\n', b'eggs\n', b'beans\n']
+        def make_file():
+            f = tempfile.NamedTemporaryFile(mode='w+b')
+            f.write(b''.join(lines))
+            f.seek(0)
+            return f
+        for i, l in enumerate(make_file()):
+            self.assertEqual(l, lines[i])
+        self.assertEqual(i, len(lines) - 1)
+
+    def test_creates_named(self):
+        # NamedTemporaryFile creates files with names
+        f = tempfile.NamedTemporaryFile()
+        self.assertTrue(os.path.exists(f.name),
+                        "NamedTemporaryFile %s does not exist" % f.name)
+
+    def test_del_on_close(self):
+        # A NamedTemporaryFile is deleted when closed
+        dir = tempfile.mkdtemp()
+        try:
+            f = tempfile.NamedTemporaryFile(dir=dir)
+            f.write(b'blat')
+            f.close()
+            self.assertFalse(os.path.exists(f.name),
+                        "NamedTemporaryFile %s exists after close" % f.name)
+        finally:
+            os.rmdir(dir)
+
+    def test_multiple_close(self):
+        # A NamedTemporaryFile can be closed many times without error
+        f = tempfile.NamedTemporaryFile()
+        f.write(b'abc\n')
+        f.close()
+        f.close()
+        f.close()
+
+    def test_context_manager(self):
+        # A NamedTemporaryFile can be used as a context manager
+        with tempfile.NamedTemporaryFile() as f:
+            self.assertTrue(os.path.exists(f.name))
+        self.assertFalse(os.path.exists(f.name))
+
+
+

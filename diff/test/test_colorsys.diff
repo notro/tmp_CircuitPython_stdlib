@@ -1,0 +1,9 @@
+--- <CPython-3.4.9>/test/test_colorsys.py
++++ lib/test/test_colorsys.py
+@@ -96,5 +96,4 @@
+             self.assertTripleEqual(yiq, colorsys.rgb_to_yiq(*rgb))
+             self.assertTripleEqual(rgb, colorsys.yiq_to_rgb(*yiq))
+ 
+-if __name__ == "__main__":
+-    unittest.main()
++

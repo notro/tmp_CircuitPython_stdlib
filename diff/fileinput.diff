@@ -1,0 +1,79 @@
+--- <CPython-3.4.9>/fileinput.py
++++ lib/fileinput.py
+@@ -81,12 +81,9 @@
+ 
+ import sys, os
+ 
+-__all__ = ["input", "close", "nextfile", "filename", "lineno", "filelineno",
+-           "isfirstline", "isstdin", "FileInput"]
+ 
+ _state = None
+ 
+-DEFAULT_BUFSIZE = 8*1024
+ 
+ def input(files=None, inplace=False, backup="", bufsize=0,
+           mode="r", openhook=None):
+@@ -207,7 +204,6 @@
+         self._files = files
+         self._inplace = inplace
+         self._backup = backup
+-        self._bufsize = bufsize or DEFAULT_BUFSIZE
+         self._savestdout = None
+         self._output = None
+         self._filename = None
+@@ -343,31 +339,14 @@
+                     # The next few lines may raise OSError
+                     os.rename(self._filename, self._backupfilename)
+                     self._file = open(self._backupfilename, self._mode)
+-                    try:
+-                        perm = os.fstat(self._file.fileno()).st_mode
+-                    except OSError:
+-                        self._output = open(self._filename, "w")
+-                    else:
+-                        mode = os.O_CREAT | os.O_WRONLY | os.O_TRUNC
+-                        if hasattr(os, 'O_BINARY'):
+-                            mode |= os.O_BINARY
+-
+-                        fd = os.open(self._filename, mode, perm)
+-                        self._output = os.fdopen(fd, "w")
+-                        try:
+-                            if hasattr(os, 'chmod'):
+-                                os.chmod(self._filename, perm)
+-                        except OSError:
+-                            pass
+-                    self._savestdout = sys.stdout
+-                    sys.stdout = self._output
++                    self._output = open(self._filename, "w")                    ###
+                 else:
+                     # This may raise OSError
+                     if self._openhook:
+                         self._file = self._openhook(self._filename, self._mode)
+                     else:
+                         self._file = open(self._filename, self._mode)
+-        self._buffer = self._file.readlines(self._bufsize)
++        self._buffer = self._file.readlines()                                   ### .readlines() doesn't support the hint argument
+         self._bufindex = 0
+         if not self._buffer:
+             self.nextfile()
+@@ -417,20 +396,4 @@
+     return openhook
+ 
+ 
+-def _test():
+-    import getopt
+-    inplace = False
+-    backup = False
+-    opts, args = getopt.getopt(sys.argv[1:], "ib:")
+-    for o, a in opts:
+-        if o == '-i': inplace = True
+-        if o == '-b': backup = a
+-    for line in input(args, inplace=inplace, backup=backup):
+-        if line[-1:] == '\n': line = line[:-1]
+-        if line[-1:] == '\r': line = line[:-1]
+-        print("%d: %s[%d]%s %s" % (lineno(), filename(), filelineno(),
+-                                   isfirstline() and "*" or "", line))
+-    print("%d: %s[%d]" % (lineno(), filename(), filelineno()))
+-
+-if __name__ == '__main__':
+-    _test()
++

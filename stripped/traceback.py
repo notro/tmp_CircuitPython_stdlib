@@ -147,6 +147,10 @@ def _some_str(value):
     except:
         return '<unprintable %s object>' % type(value).__name__
 
+def print_exc(limit=None, file=None, chain=True):
+    """Shorthand for 'print_exception(*sys.exc_info(), limit, file)'."""
+    print_exception(*sys.exc_info(), limit=limit, file=file, chain=chain)
+
 def format_exc(limit=None, chain=True):
     """Like print_exc() but return a string."""
     return "".join(format_exception(*sys.exc_info(), limit=limit, chain=chain))

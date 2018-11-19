@@ -237,6 +237,13 @@ def findfile(filename, subdir=None):
         if os.path.exists(fn): return fn
     return filename
 
+def create_empty_file(filename):
+    try:                                                                        ###
+        os.unlink(filename)                                                     ###
+    except OSError:                                                             ###
+        pass                                                                    ###
+    open(filename, 'w').close()                                                 ###
+
 @contextlib.contextmanager
 def swap_attr(obj, attr, new_val):
     """Temporary swap out an attribute with a new object.

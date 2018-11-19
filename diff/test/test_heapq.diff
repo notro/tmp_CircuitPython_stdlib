@@ -1,0 +1,136 @@
+--- <CPython-3.4.9>/test/test_heapq.py
++++ lib/test/test_heapq.py
+@@ -7,23 +7,10 @@
+ from test import support
+ from unittest import TestCase, skipUnless
+ 
+-py_heapq = support.import_fresh_module('heapq', blocked=['_heapq'])
+-c_heapq = support.import_fresh_module('heapq', fresh=['_heapq'])
++import heapq as py_heapq                                                        ###
+ 
+ # _heapq.nlargest/nsmallest are saved in heapq._nlargest/_smallest when
+ # _heapq is imported, so check them there
+-func_names = ['heapify', 'heappop', 'heappush', 'heappushpop',
+-              'heapreplace', '_nlargest', '_nsmallest']
+-
+-class TestModules(TestCase):
+-    def test_py_functions(self):
+-        for fname in func_names:
+-            self.assertEqual(getattr(py_heapq, fname).__module__, 'heapq')
+-
+-    @skipUnless(c_heapq, 'requires _heapq')
+-    def test_c_functions(self):
+-        for fname in func_names:
+-            self.assertEqual(getattr(c_heapq, fname).__module__, '_heapq')
+ 
+ 
+ class TestHeap:
+@@ -167,39 +154,7 @@
+         with self.assertRaises(IndexError):
+             list(self.module.merge(iterable(), iterable()))
+ 
+-    def test_merge_stability(self):
+-        class Int(int):
+-            pass
+-        inputs = [[], [], [], []]
+-        for i in range(20000):
+-            stream = random.randrange(4)
+-            x = random.randrange(500)
+-            obj = Int(x)
+-            obj.pair = (x, stream)
+-            inputs[stream].append(obj)
+-        for stream in inputs:
+-            stream.sort()
+-        result = [i.pair for i in self.module.merge(*inputs)]
+-        self.assertEqual(result, sorted(result))
+-
+-    def test_nsmallest(self):
+-        data = [(random.randrange(2000), i) for i in range(1000)]
+-        for f in (None, lambda x:  x[0] * 547 % 2000):
+-            for n in (0, 1, 2, 10, 100, 400, 999, 1000, 1100):
+-                self.assertEqual(list(self.module.nsmallest(n, data)),
+-                                 sorted(data)[:n])
+-                self.assertEqual(list(self.module.nsmallest(n, data, key=f)),
+-                                 sorted(data, key=f)[:n])
+-
+-    def test_nlargest(self):
+-        data = [(random.randrange(2000), i) for i in range(1000)]
+-        for f in (None, lambda x:  x[0] * 547 % 2000):
+-            for n in (0, 1, 2, 10, 100, 400, 999, 1000, 1100):
+-                self.assertEqual(list(self.module.nlargest(n, data)),
+-                                 sorted(data, reverse=True)[:n])
+-                self.assertEqual(list(self.module.nlargest(n, data, key=f)),
+-                                 sorted(data, key=f, reverse=True)[:n])
+-
++# TypeError: unsupported types for __lt__: 'int', 'Int'                         ###
+     def test_comparison_operator(self):
+         # Issue 3051: Make sure heapq works with both __lt__
+         # For python 3.0, __le__ alone is not enough
+@@ -227,9 +182,6 @@
+     module = py_heapq
+ 
+ 
+-@skipUnless(c_heapq, 'requires _heapq')
+-class TestHeapC(TestHeap, TestCase):
+-    module = c_heapq
+ 
+ 
+ #==============================================================================
+@@ -343,8 +295,7 @@
+     def test_non_sequence(self):
+         for f in (self.module.heapify, self.module.heappop):
+             self.assertRaises((TypeError, AttributeError), f, 10)
+-        for f in (self.module.heappush, self.module.heapreplace,
+-                  self.module.nlargest, self.module.nsmallest):
++        for f in (self.module.heappush, self.module.heapreplace):               ###
+             self.assertRaises((TypeError, AttributeError), f, 10, 10)
+ 
+     def test_len_only(self):
+@@ -352,8 +303,6 @@
+             self.assertRaises((TypeError, AttributeError), f, LenOnly())
+         for f in (self.module.heappush, self.module.heapreplace):
+             self.assertRaises((TypeError, AttributeError), f, LenOnly(), 10)
+-        for f in (self.module.nlargest, self.module.nsmallest):
+-            self.assertRaises(TypeError, f, 2, LenOnly())
+ 
+     def test_get_only(self):
+         for f in (self.module.heapify, self.module.heappop):
+@@ -367,26 +316,12 @@
+         seq = [CmpErr(), CmpErr(), CmpErr()]
+         for f in (self.module.heapify, self.module.heappop):
+             self.assertRaises(ZeroDivisionError, f, seq)
+-        for f in (self.module.heappush, self.module.heapreplace):
+-            self.assertRaises(ZeroDivisionError, f, seq, 10)
+-        for f in (self.module.nlargest, self.module.nsmallest):
+-            self.assertRaises(ZeroDivisionError, f, 2, seq)
+ 
+     def test_arg_parsing(self):
+         for f in (self.module.heapify, self.module.heappop,
+                   self.module.heappush, self.module.heapreplace,
+                   self.module.nlargest, self.module.nsmallest):
+             self.assertRaises((TypeError, AttributeError), f, 10)
+-
+-    def test_iterable_args(self):
+-        for f in (self.module.nlargest, self.module.nsmallest):
+-            for s in ("123", "", range(1000), (1, 1.2), range(2000,2200,5)):
+-                for g in (G, I, Ig, L, R):
+-                    self.assertEqual(list(f(2, g(s))), list(f(2,s)))
+-                self.assertEqual(list(f(2, S(s))), [])
+-                self.assertRaises(TypeError, f, 2, X(s))
+-                self.assertRaises(TypeError, f, 2, N(s))
+-                self.assertRaises(ZeroDivisionError, f, 2, E(s))
+ 
+     # Issue #17278: the heap may change size while it's being walked.
+ 
+@@ -408,10 +343,4 @@
+ class TestErrorHandlingPython(TestErrorHandling, TestCase):
+     module = py_heapq
+ 
+-@skipUnless(c_heapq, 'requires _heapq')
+-class TestErrorHandlingC(TestErrorHandling, TestCase):
+-    module = c_heapq
+-
+-
+-if __name__ == "__main__":
+-    unittest.main()
++

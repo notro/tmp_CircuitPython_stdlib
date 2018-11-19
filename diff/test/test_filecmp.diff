@@ -1,0 +1,82 @@
+--- <CPython-3.4.9>/test/test_filecmp.py
++++ lib/test/test_filecmp.py
+@@ -124,11 +124,6 @@
+         self.assertEqual(d.right_only, [])
+         self.assertEqual(d.same_files, ['file'])
+         self.assertEqual(d.diff_files, [])
+-        expected_report = [
+-            "diff {} {}".format(self.dir, self.dir_same),
+-            "Identical files : ['file']",
+-        ]
+-        self._assert_report(d.report, expected_report)
+ 
+         # Check attributes for comparison of two different directories (right)
+         left_dir, right_dir = self.dir, self.dir_diff
+@@ -142,12 +137,6 @@
+         self.assertEqual(d.right_only, ['file2'])
+         self.assertEqual(d.same_files, ['file'])
+         self.assertEqual(d.diff_files, [])
+-        expected_report = [
+-            "diff {} {}".format(self.dir, self.dir_diff),
+-            "Only in {} : ['file2']".format(self.dir_diff),
+-            "Identical files : ['file']",
+-        ]
+-        self._assert_report(d.report, expected_report)
+ 
+         # Check attributes for comparison of two different directories (left)
+         left_dir, right_dir = self.dir, self.dir_diff
+@@ -165,12 +154,6 @@
+         self.assertEqual(d.right_only, [])
+         self.assertEqual(d.same_files, ['file'])
+         self.assertEqual(d.diff_files, [])
+-        expected_report = [
+-            "diff {} {}".format(self.dir, self.dir_diff),
+-            "Only in {} : ['file2']".format(self.dir),
+-            "Identical files : ['file']",
+-        ]
+-        self._assert_report(d.report, expected_report)
+ 
+         # Add different file2
+         with open(os.path.join(self.dir_diff, 'file2'), 'w') as output:
+@@ -178,40 +161,5 @@
+         d = filecmp.dircmp(self.dir, self.dir_diff)
+         self.assertEqual(d.same_files, ['file'])
+         self.assertEqual(d.diff_files, ['file2'])
+-        expected_report = [
+-            "diff {} {}".format(self.dir, self.dir_diff),
+-            "Identical files : ['file']",
+-            "Differing files : ['file2']",
+-        ]
+-        self._assert_report(d.report, expected_report)
+ 
+-    def test_report_partial_closure(self):
+-        left_dir, right_dir = self.dir, self.dir_same
+-        d = filecmp.dircmp(left_dir, right_dir)
+-        expected_report = [
+-            "diff {} {}".format(self.dir, self.dir_same),
+-            "Identical files : ['file']",
+-        ]
+-        self._assert_report(d.report_partial_closure, expected_report)
+-
+-    def test_report_full_closure(self):
+-        left_dir, right_dir = self.dir, self.dir_same
+-        d = filecmp.dircmp(left_dir, right_dir)
+-        expected_report = [
+-            "diff {} {}".format(self.dir, self.dir_same),
+-            "Identical files : ['file']",
+-        ]
+-        self._assert_report(d.report_full_closure, expected_report)
+-
+-    def _assert_report(self, dircmp_report, expected_report_lines):
+-        with support.captured_stdout() as stdout:
+-            dircmp_report()
+-            report_lines = stdout.getvalue().strip().split('\n')
+-            self.assertEqual(report_lines, expected_report_lines)
+-
+-
+-def test_main():
+-    support.run_unittest(FileCompareTestCase, DirCompareTestCase)
+-
+-if __name__ == "__main__":
+-    test_main()
++
