@@ -1,3 +1,4 @@
+import test.support; test.support.import_module('binascii')                     ###
 import struct
 import zipfile
 import unittest
