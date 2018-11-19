@@ -995,11 +995,16 @@ def findfile(filename, subdir=None):
         if os.path.exists(fn): return fn
     return filename
 
-#def create_empty_file(filename):
+def create_empty_file(filename):
 #    """Create an empty file. If the file already exists, truncate it."""
 #    fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC)
 #    os.close(fd)
-#
+    try:                                                                        ###
+        os.unlink(filename)                                                     ###
+    except OSError:                                                             ###
+        pass                                                                    ###
+    open(filename, 'w').close()                                                 ###
+
 #def sortdict(dict):
 #    "Like repr(dict), but in sorted order."
 #    items = sorted(dict.items())
