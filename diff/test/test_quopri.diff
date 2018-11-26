@@ -1,0 +1,72 @@
+--- <CPython-3.4.9>/test/test_quopri.py
++++ lib/test/test_quopri.py
+@@ -1,7 +1,6 @@
+-from test import support
+ import unittest
+ 
+-import sys, os, io, subprocess
++import sys, os, io                                                              ###
+ import quopri
+ 
+ 
+@@ -45,22 +44,7 @@
+ 
+ 
+ def withpythonimplementation(testfunc):
+-    def newtest(self):
+-        # Test default implementation
+-        testfunc(self)
+-        # Test Python implementation
+-        if quopri.b2a_qp is not None or quopri.a2b_qp is not None:
+-            oldencode = quopri.b2a_qp
+-            olddecode = quopri.a2b_qp
+-            try:
+-                quopri.b2a_qp = None
+-                quopri.a2b_qp = None
+-                testfunc(self)
+-            finally:
+-                quopri.b2a_qp = oldencode
+-                quopri.a2b_qp = olddecode
+-    newtest.__name__ = testfunc.__name__
+-    return newtest
++    return testfunc                                                             ### AttributeError: 'closure' object has no attribute '__name__'
+ 
+ class QuopriTestCase(unittest.TestCase):
+     # Each entry is a tuple of (plaintext, encoded string).  These strings are
+@@ -181,35 +165,4 @@
+         for p, e in self.HSTRINGS:
+             self.assertEqual(quopri.decodestring(e, header=True), p)
+ 
+-    def test_scriptencode(self):
+-        (p, e) = self.STRINGS[-1]
+-        process = subprocess.Popen([sys.executable, "-mquopri"],
+-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+-        self.addCleanup(process.stdout.close)
+-        cout, cerr = process.communicate(p)
+-        # On Windows, Python will output the result to stdout using
+-        # CRLF, as the mode of stdout is text mode. To compare this
+-        # with the expected result, we need to do a line-by-line comparison.
+-        cout = cout.decode('latin-1').splitlines()
+-        e = e.decode('latin-1').splitlines()
+-        assert len(cout)==len(e)
+-        for i in range(len(cout)):
+-            self.assertEqual(cout[i], e[i])
+-        self.assertEqual(cout, e)
+-
+-    def test_scriptdecode(self):
+-        (p, e) = self.STRINGS[-1]
+-        process = subprocess.Popen([sys.executable, "-mquopri", "-d"],
+-                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+-        self.addCleanup(process.stdout.close)
+-        cout, cerr = process.communicate(e)
+-        cout = cout.decode('latin-1')
+-        p = p.decode('latin-1')
+-        self.assertEqual(cout.splitlines(), p.splitlines())
+-
+-def test_main():
+-    support.run_unittest(QuopriTestCase)
+-
+-
+-if __name__ == "__main__":
+-    test_main()
++

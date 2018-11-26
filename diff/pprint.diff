@@ -1,0 +1,139 @@
+--- <CPython-3.4.9>/pprint.py
++++ lib/pprint.py
+@@ -39,8 +39,6 @@
+ from collections import OrderedDict as _OrderedDict
+ from io import StringIO as _StringIO
+ 
+-__all__ = ["pprint","pformat","isreadable","isrecursive","saferepr",
+-           "PrettyPrinter"]
+ 
+ 
+ def pprint(object, stream=None, indent=1, width=80, depth=None, *,
+@@ -78,7 +76,6 @@
+ 
+     """
+ 
+-    __slots__ = ['obj']
+ 
+     def __init__(self, obj):
+         self.obj = obj
+@@ -86,7 +83,7 @@
+     def __lt__(self, other):
+         try:
+             rv = self.obj.__lt__(other.obj)
+-        except TypeError:
++        except (TypeError, AttributeError):                                     ###
+             rv = NotImplemented
+ 
+         if rv is NotImplemented:
+@@ -94,6 +91,19 @@
+                  (str(type(other.obj)), id(other.obj))
+         return rv
+ 
++    def __gt__(self, other):                                                    ###
++        try:                                                                    ###
++            rv = self.obj.__gt__(other.obj)                                     ###
++        except (TypeError, AttributeError):                                     ###
++            try:                                                                ###
++                rv = self.obj > other.obj                                       ###
++            except (TypeError, AttributeError):                                 ###
++                rv = NotImplemented                                             ###
++                                                                                ###
++        if rv is NotImplemented:                                                ###
++            rv = (str(type(self.obj)), id(self.obj)) > (str(type(other.obj)), id(other.obj))  ###
++        return rv                                                               ###
++                                                                                ###
+ def _safe_tuple(t):
+     "Helper function for comparing 2-tuples"
+     return _safe_key(t[0]), _safe_key(t[1])
+@@ -196,11 +206,11 @@
+                 write('}')
+                 return
+ 
+-            if ((issubclass(typ, list) and r is list.__repr__) or
+-                (issubclass(typ, tuple) and r is tuple.__repr__) or
+-                (issubclass(typ, set) and r is set.__repr__) or
+-                (issubclass(typ, frozenset) and r is frozenset.__repr__)
+-               ):
++            if ((issubclass(typ, list) or                                       ### No __repr__ on builtin types
++                 issubclass(typ, tuple) or                                      ###
++                 issubclass(typ, set) or                                        ###
++                 issubclass(typ, frozenset) and r is None)                      ###
++               ):                                                               ###
+                 length = len(object)
+                 if issubclass(typ, list):
+                     write('[')
+@@ -234,7 +244,7 @@
+                 write(endchar)
+                 return
+ 
+-            if issubclass(typ, str) and len(object) > 0 and r is str.__repr__:
++            if issubclass(typ, str) and len(object) > 0 and r is None:          ###
+                 chunks = []
+                 lines = object.splitlines(True)
+                 if level == 1:
+@@ -245,8 +255,24 @@
+                     if len(rep) <= max_width:
+                         chunks.append(rep)
+                     else:
++                        def split(line):                                        ### ure.split: NotImplementedError: Splitting with sub-captures
++                            parts = []                                          ###
++                            prev = 0                                            ###
++                            if line[0] in ' \t\n\r\f\v':                        ###
++                                parts.append('')                                ###
++                            for s in line.split():                              ###
++                                start = line.find(s, prev)                      ###
++                                end = start + len(s)                            ###
++                                if start > prev:                                ###
++                                    parts.append(line[prev:start])              ###
++                                parts.append(s)                                 ###
++                                prev = end                                      ###
++                            if line[-1] in ' \t\n\r\f\v':                       ###
++                                parts.append(line[end:])                        ###
++                                parts.append('')                                ###
++                            return parts                                        ###
+                         # A list of alternating (non-space, space) strings
+-                        parts = re.split(r'(\s+)', line) + ['']
++                        parts = split(line) + ['']                              ###
+                         current = ''
+                         for i in range(0, len(parts), 2):
+                             part = parts[i] + parts[i+1]
+@@ -337,7 +363,7 @@
+         return ("%s%s%s" % (closure, sio.getvalue(), closure)), True, False
+ 
+     r = getattr(typ, "__repr__", None)
+-    if issubclass(typ, dict) and r is dict.__repr__:
++    if issubclass(typ, dict) and r is None:                                     ###
+         if not object:
+             return "{}", True, False
+         objid = id(object)
+@@ -363,8 +389,7 @@
+         del context[objid]
+         return "{%s}" % ", ".join(components), readable, recursive
+ 
+-    if (issubclass(typ, list) and r is list.__repr__) or \
+-       (issubclass(typ, tuple) and r is tuple.__repr__):
++    if (r is None and (issubclass(typ, list) or issubclass(typ, tuple))):       ###
+         if issubclass(typ, list):
+             if not object:
+                 return "[]", True, False
+@@ -405,18 +430,4 @@
+             % (type(object).__name__, id(object)))
+ 
+ 
+-def _perfcheck(object=None):
+-    import time
+-    if object is None:
+-        object = [("string", (1, 2), [3, 4], {5: 6, 7: 8})] * 100000
+-    p = PrettyPrinter()
+-    t1 = time.time()
+-    _safe_repr(object, {}, None, 0)
+-    t2 = time.time()
+-    p.pformat(object)
+-    t3 = time.time()
+-    print("_safe_repr:", t2 - t1)
+-    print("pformat:", t3 - t2)
+-
+-if __name__ == "__main__":
+-    _perfcheck()
++

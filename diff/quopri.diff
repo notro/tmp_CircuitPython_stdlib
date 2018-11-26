@@ -1,0 +1,17 @@
+--- <CPython-3.4.9>/quopri.py
++++ lib/quopri.py
+@@ -4,7 +4,6 @@
+ 
+ # (Dec 1991 version).
+ 
+-__all__ = ["encode", "decode", "encodestring", "decodestring"]
+ 
+ ESCAPE = b'='
+ MAXLINESIZE = 76
+@@ -238,5 +237,4 @@
+ 
+ 
+ 
+-if __name__ == '__main__':
+-    main()
++

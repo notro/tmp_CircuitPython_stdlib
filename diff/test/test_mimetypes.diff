@@ -1,0 +1,71 @@
+--- <CPython-3.4.9>/test/test_mimetypes.py
++++ lib/test/test_mimetypes.py
+@@ -1,5 +1,4 @@
+ import io
+-import locale
+ import mimetypes
+ import sys
+ import unittest
+@@ -24,13 +23,6 @@
+         eq(self.db.guess_type("foo.tar.Z"), ("application/x-tar", "compress"))
+         eq(self.db.guess_type("foo.tar.bz2"), ("application/x-tar", "bzip2"))
+         eq(self.db.guess_type("foo.tar.xz"), ("application/x-tar", "xz"))
+-
+-    def test_data_urls(self):
+-        eq = self.assertEqual
+-        guess_type = self.db.guess_type
+-        eq(guess_type("data:,thisIsTextPlain"), ("text/plain", None))
+-        eq(guess_type("data:;base64,thisIsTextPlain"), ("text/plain", None))
+-        eq(guess_type("data:text/x-foo,thisIsTextXFoo"), ("text/x-foo", None))
+ 
+     def test_file_parsing(self):
+         eq = self.assertEqual
+@@ -65,47 +57,4 @@
+         all = self.db.guess_all_extensions('image/jpg', strict=True)
+         eq(all, [])
+ 
+-    def test_encoding(self):
+-        getpreferredencoding = locale.getpreferredencoding
+-        self.addCleanup(setattr, locale, 'getpreferredencoding',
+-                                 getpreferredencoding)
+-        locale.getpreferredencoding = lambda: 'ascii'
+-
+-        filename = support.findfile("mime.types")
+-        mimes = mimetypes.MimeTypes([filename])
+-        exts = mimes.guess_all_extensions('application/vnd.geocube+xml',
+-                                          strict=True)
+-        self.assertEqual(exts, ['.g3', '.g\xb3'])
+-
+-
+-@unittest.skipUnless(sys.platform.startswith("win"), "Windows only")
+-class Win32MimeTypesTestCase(unittest.TestCase):
+-    def setUp(self):
+-        # ensure all entries actually come from the Windows registry
+-        self.original_types_map = mimetypes.types_map.copy()
+-        mimetypes.types_map.clear()
+-        mimetypes.init()
+-        self.db = mimetypes.MimeTypes()
+-
+-    def tearDown(self):
+-        # restore default settings
+-        mimetypes.types_map.clear()
+-        mimetypes.types_map.update(self.original_types_map)
+-
+-    def test_registry_parsing(self):
+-        # the original, minimum contents of the MIME database in the
+-        # Windows registry is undocumented AFAIK.
+-        # Use file types that should *always* exist:
+-        eq = self.assertEqual
+-        eq(self.db.guess_type("foo.txt"), ("text/plain", None))
+-        eq(self.db.guess_type("image.jpg"), ("image/jpeg", None))
+-        eq(self.db.guess_type("image.png"), ("image/png", None))
+-
+-def test_main():
+-    support.run_unittest(MimeTypesTestCase,
+-        Win32MimeTypesTestCase
+-        )
+-
+-
+-if __name__ == "__main__":
+-    test_main()
++
