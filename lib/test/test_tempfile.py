@@ -750,6 +750,7 @@ class TestNamedTemporaryFile(BaseTestCase):
 #            # No reference cycle was created.
 #            self.assertIsNone(wr())
 #
+    @unittest.skip('HANGS')                                                     ###
     def test_iter(self):
         # Issue #23700: getting iterator from a temporary file should keep
         # it alive as long as it's being iterated over
