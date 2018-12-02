@@ -1,0 +1,105 @@
+--- <CPython-3.4.9>/sched.py
++++ lib/sched.py
+@@ -32,17 +32,23 @@
+ import heapq
+ from collections import namedtuple
+ try:
+-    import threading
+-except ImportError:
+-    import dummy_threading as threading
+-try:
+     from time import monotonic as _time
+ except ImportError:
+     from time import time as _time
+ 
+-__all__ = ["scheduler"]
+ 
+-class Event(namedtuple('Event', 'time, priority, action, argument, kwargs')):
++class Event:                                                                    ### Looks like namedtuple doesn't like to be subclassed
++    def __init__(self, time, priority, action, argument, kwargs):               ### AttributeError: 'Event' object has no attribute 'time'
++        self.time = time                                                        ###
++        self.priority = priority                                                ###
++        self.action = action                                                    ###
++        self.argument = argument                                                ###
++        self.kwargs = kwargs                                                    ###
++    def __iter__(self):                                                         ###
++        for x in (self.time, self.priority, self.action, self.argument, self.kwargs):  ###
++            yield x                                                             ###
++    def __repr__(self):                                                         ###
++        return 'Event(time={}, priority={}, action={}, argument={}, kwargs={})'.format(self.time, self.priority, self.action, self.argument, self.kwargs)  ###
+     def __eq__(s, o): return (s.time, s.priority) == (o.time, o.priority)
+     def __ne__(s, o): return (s.time, s.priority) != (o.time, o.priority)
+     def __lt__(s, o): return (s.time, s.priority) <  (o.time, o.priority)
+@@ -50,7 +56,9 @@
+     def __gt__(s, o): return (s.time, s.priority) >  (o.time, o.priority)
+     def __ge__(s, o): return (s.time, s.priority) >= (o.time, o.priority)
+ 
+-_sentinel = object()
++class _Sentinel:                                                                ### Probably gc longlived relocation problem
++    pass                                                                        ###
++_sentinel = _Sentinel()                                                         ###
+ 
+ class scheduler:
+ 
+@@ -58,7 +66,6 @@
+         """Initialize a new instance, passing the time and delay
+         functions"""
+         self._queue = []
+-        self._lock = threading.RLock()
+         self.timefunc = timefunc
+         self.delayfunc = delayfunc
+ 
+@@ -69,11 +76,10 @@
+         if necessary.
+ 
+         """
+-        if kwargs is _sentinel:
++        if isinstance(kwargs, _Sentinel):                                       ###
+             kwargs = {}
+         event = Event(time, priority, action, argument, kwargs)
+-        with self._lock:
+-            heapq.heappush(self._queue, event)
++        heapq.heappush(self._queue, event)                                      ###
+         return event # The ID
+ 
+     def enter(self, delay, priority, action, argument=(), kwargs=_sentinel):
+@@ -92,13 +98,10 @@
+         If the event is not in the queue, this raises ValueError.
+ 
+         """
+-        with self._lock:
+-            self._queue.remove(event)
+-            heapq.heapify(self._queue)
++        self._queue.remove(event)                                               ###
++        heapq.heapify(self._queue)                                              ###
+ 
+     def empty(self):
+-        """Check whether the queue is empty."""
+-        with self._lock:
+             return not self._queue
+ 
+     def run(self, blocking=True):
+@@ -127,13 +130,12 @@
+         """
+         # localize variable access to minimize overhead
+         # and to improve thread safety
+-        lock = self._lock
+         q = self._queue
+         delayfunc = self.delayfunc
+         timefunc = self.timefunc
+         pop = heapq.heappop
+         while True:
+-            with lock:
++            if True:                                                            ###
+                 if not q:
+                     break
+                 time, priority, action, argument, kwargs = q[0]
+@@ -162,6 +164,6 @@
+         # Use heapq to sort the queue rather than using 'sorted(self._queue)'.
+         # With heapq, two events scheduled at the same time will show in
+         # the actual order they would be retrieved.
+-        with self._lock:
+-            events = self._queue[:]
++        events = self._queue[:]                                                 ###
+         return list(map(heapq.heappop, [events]*len(events)))
++
