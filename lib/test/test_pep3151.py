@@ -52,42 +52,42 @@ class HierarchyTest(unittest.TestCase):
 #    def test_select_error(self):
 #        self.assertIs(select.error, OSError)
 #
-    # mmap.error is tested in test_mmap
-
-    _pep_map = """
-        +-- BlockingIOError        EAGAIN, EALREADY, EWOULDBLOCK, EINPROGRESS
-        +-- ChildProcessError                                          ECHILD
-        +-- ConnectionError
-            +-- BrokenPipeError                              EPIPE, ESHUTDOWN
-            +-- ConnectionAbortedError                           ECONNABORTED
-            +-- ConnectionRefusedError                           ECONNREFUSED
-            +-- ConnectionResetError                               ECONNRESET
-        +-- FileExistsError                                            EEXIST
-        +-- FileNotFoundError                                          ENOENT
-        +-- InterruptedError                                            EINTR
-        +-- IsADirectoryError                                          EISDIR
-        +-- NotADirectoryError                                        ENOTDIR
-        +-- PermissionError                                     EACCES, EPERM
-        +-- ProcessLookupError                                          ESRCH
-        +-- TimeoutError                                            ETIMEDOUT
-    """
-    def _make_map(s):
-        _map = {}
-        for line in s.splitlines():
-            line = line.strip('+- ')
-            if not line:
-                continue
-            excname, _, errnames = line.partition(' ')
-            for errname in filter(None, errnames.strip().split(', ')):
-                _map[getattr(errno, errname)] = getattr(builtins, excname)
-        return _map
+#    # mmap.error is tested in test_mmap
+#
+#    _pep_map = """
+#        +-- BlockingIOError        EAGAIN, EALREADY, EWOULDBLOCK, EINPROGRESS
+#        +-- ChildProcessError                                          ECHILD
+#        +-- ConnectionError
+#            +-- BrokenPipeError                              EPIPE, ESHUTDOWN
+#            +-- ConnectionAbortedError                           ECONNABORTED
+#            +-- ConnectionRefusedError                           ECONNREFUSED
+#            +-- ConnectionResetError                               ECONNRESET
+#        +-- FileExistsError                                            EEXIST
+#        +-- FileNotFoundError                                          ENOENT
+#        +-- InterruptedError                                            EINTR
+#        +-- IsADirectoryError                                          EISDIR
+#        +-- NotADirectoryError                                        ENOTDIR
+#        +-- PermissionError                                     EACCES, EPERM
+#        +-- ProcessLookupError                                          ESRCH
+#        +-- TimeoutError                                            ETIMEDOUT
+#    """
+#    def _make_map(s):
+#        _map = {}
+#        for line in s.splitlines():
+#            line = line.strip('+- ')
+#            if not line:
+#                continue
+#            excname, _, errnames = line.partition(' ')
+#            for errname in filter(None, errnames.strip().split(', ')):
+#                _map[getattr(errno, errname)] = getattr(builtins, excname)
+#        return _map
 #    _map = _make_map(_pep_map)
-
-    def test_errno_mapping(self):
-        # The OSError constructor maps errnos to subclasses
-        # A sample test for the basic functionality
-        e = OSError(EEXIST, "Bad file descriptor")
-        self.assertIs(type(e), FileExistsError)
+#
+#    def test_errno_mapping(self):
+#        # The OSError constructor maps errnos to subclasses
+#        # A sample test for the basic functionality
+#        e = OSError(EEXIST, "Bad file descriptor")
+#        self.assertIs(type(e), FileExistsError)
 #        # Exhaustive testing
 #        for errcode, exc in self._map.items():
 #            e = OSError(errcode, "Some message")
@@ -96,30 +96,30 @@ class HierarchyTest(unittest.TestCase):
 #        for errcode in othercodes:
 #            e = OSError(errcode, "Some message")
 #            self.assertIs(type(e), OSError)
-
-    def test_try_except(self):
-        filename = "some_hopefully_non_existing_file"
-
-        # This checks that try .. except checks the concrete exception
-        # (FileNotFoundError) and not the base type specified when
-        # PyErr_SetFromErrnoWithFilenameObject was called.
-        # (it is therefore deliberate that it doesn't use assertRaises)
-        try:
-            open(filename)
-        except FileNotFoundError:
-            pass
-        else:
-            self.fail("should have raised a FileNotFoundError")
-
-        # Another test for PyErr_SetExcFromWindowsErrWithFilenameObject()
-        self.assertFalse(os.path.exists(filename))
-        try:
-            os.unlink(filename)
-        except FileNotFoundError:
-            pass
-        else:
-            self.fail("should have raised a FileNotFoundError")
-
+#
+#    def test_try_except(self):
+#        filename = "some_hopefully_non_existing_file"
+#
+#        # This checks that try .. except checks the concrete exception
+#        # (FileNotFoundError) and not the base type specified when
+#        # PyErr_SetFromErrnoWithFilenameObject was called.
+#        # (it is therefore deliberate that it doesn't use assertRaises)
+#        try:
+#            open(filename)
+#        except FileNotFoundError:
+#            pass
+#        else:
+#            self.fail("should have raised a FileNotFoundError")
+#
+#        # Another test for PyErr_SetExcFromWindowsErrWithFilenameObject()
+#        self.assertFalse(os.path.exists(filename))
+#        try:
+#            os.unlink(filename)
+#        except FileNotFoundError:
+#            pass
+#        else:
+#            self.fail("should have raised a FileNotFoundError")
+#
 
 class AttributesTest(unittest.TestCase):
 
