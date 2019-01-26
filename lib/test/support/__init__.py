@@ -729,6 +729,8 @@ def rmtree(path):
 #requires_IEEE_754 = unittest.skipUnless(
 #    float.__getformat__("double").startswith("IEEE"),
 #    "test requires IEEE 754 doubles")
+def requires_IEEE_754(f):                                                       ###
+    return f                                                                    ###
 #
 #requires_zlib = unittest.skipUnless(zlib, 'requires zlib')
 #
