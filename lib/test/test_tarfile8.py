@@ -57,12 +57,8 @@ class AppendTest(AppendTestBase, unittest.TestCase):
 #        fobj.seek(0)
 #        self._test(fileobj=fobj)
 #
+    @unittest.skip("Missing BytesIO.tell")                                      ###
     def test_fileobj(self):
-            try:                                                                ###
-                self._test_fileobj()                                            ###
-            except MemoryError:                                                 ###
-                self.skipTest('Not enough memory')                              ###
-    def _test_fileobj(self):                                                    ###
         self._create_testtar()
         with open(self.tarname, "rb") as fobj:
             data = fobj.read()
