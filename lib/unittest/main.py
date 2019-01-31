@@ -329,6 +329,14 @@ class TestProgram(object):
         msg += '\n'                                                             ###
                                                                                 ###
         self.testRunner.stream.write(msg)                                       ###
+        class Result: pass                                                      ###
+        self.result = Result()                                                  ###
+        self.result.testsRun = run                                              ###
+        self.result.errors = [None] * errors                                    ###
+        self.result.failures = [None] * failures                                ###
+        self.result.skipped = [None] * skipped                                  ###
+        self.result.expectedFailures = [None] * expectedFails                   ###
+        self.result.unexpectedSuccesses = [None] * unexpectedSuccesses          ###
                                                                                 ###
     def _do_discovery(self, argv, Loader=None):
 #        self.start = '.'
