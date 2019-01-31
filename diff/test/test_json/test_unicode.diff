@@ -1,10 +1,14 @@
 --- <CPython-3.4.9>/test/test_json/test_unicode.py
 +++ lib/test/test_json/test_unicode.py
-@@ -5,26 +5,6 @@
- class TestUnicode:
+@@ -1,3 +1,4 @@
++import unittest                                                                 ###
+ from collections import OrderedDict
+ from test.test_json import PyTest, CTest
+ 
+@@ -6,38 +7,19 @@
      # test_encoding1 and test_encoding2 from 2.x are irrelevant (only str
      # is supported as input, not bytes).
--
+ 
 -    def test_encoding3(self):
 -        u = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
 -        j = self.dumps(u)
@@ -24,10 +28,17 @@
 -        u = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
 -        j = self.dumps([u], ensure_ascii=False)
 -        self.assertEqual(j, '["{0}"]'.format(u))
- 
+-
++    @unittest.expectedFailure                                                   ###
      def test_big_unicode_encode(self):
          u = '\U0001d120'
-@@ -37,7 +17,7 @@
+         self.assertEqual(self.dumps(u), '"\\ud834\\udd20"')
+-        self.assertEqual(self.dumps(u, ensure_ascii=False), '"\U0001d120"')
+ 
++    @unittest.expectedFailure                                                   ###
+     def test_big_unicode_decode(self):
+         u = 'z\U0001d120x'
+         self.assertEqual(self.loads('"' + u + '"'), u)
          self.assertEqual(self.loads('"z\\ud834\\udd20x"'), u)
  
      def test_unicode_decode(self):
@@ -36,9 +47,34 @@
              u = chr(i)
              s = '"\\u{0:04x}"'.format(i)
              self.assertEqual(self.loads(s), u)
-@@ -72,4 +52,4 @@
+@@ -47,29 +29,12 @@
+         self.assertEqual(type(self.loads('"a"')), str)
+         self.assertEqual(type(self.loads('["a"]')[0]), str)
+ 
+-    def test_bytes_encode(self):
+-        self.assertRaises(TypeError, self.dumps, b"hi")
+-        self.assertRaises(TypeError, self.dumps, [b"hi"])
+-
+-    def test_bytes_decode(self):
+-        self.assertRaises(TypeError, self.loads, b'"hi"')
+-        self.assertRaises(TypeError, self.loads, b'["hi"]')
+-
+-
+     def test_object_pairs_hook_with_unicode(self):
+         s = '{"xkd":1, "kcw":2, "art":3, "hxm":4, "qrt":5, "pad":6, "hoy":7}'
+         p = [("xkd", 1), ("kcw", 2), ("art", 3), ("hxm", 4),
+              ("qrt", 5), ("pad", 6), ("hoy", 7)]
+         self.assertEqual(self.loads(s), eval(s))
+-        self.assertEqual(self.loads(s, object_pairs_hook = lambda x: x), p)
+-        od = self.loads(s, object_pairs_hook = OrderedDict)
+-        self.assertEqual(od, OrderedDict(p))
+-        self.assertEqual(type(od), OrderedDict)
+-        # the object_pairs_hook takes priority over the object_hook
+-        self.assertEqual(self.loads(s, object_pairs_hook = OrderedDict,
+-                                    object_hook = lambda x: None),
+-                         OrderedDict(p))
  
  
- class TestPyUnicode(TestUnicode, PyTest): pass
--class TestCUnicode(TestUnicode, CTest): pass
+-class TestPyUnicode(TestUnicode, PyTest): pass
+ class TestCUnicode(TestUnicode, CTest): pass
 +

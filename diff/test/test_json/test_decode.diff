@@ -1,7 +1,8 @@
 --- <CPython-3.4.9>/test/test_json/test_decode.py
 +++ lib/test/test_json/test_decode.py
-@@ -1,15 +1,9 @@
+@@ -1,15 +1,11 @@
 -import decimal
++import unittest                                                                 ###
  from io import StringIO, BytesIO
  from collections import OrderedDict
  from test.test_json import PyTest, CTest
@@ -13,10 +14,45 @@
 -        self.assertTrue(isinstance(rval, decimal.Decimal))
 -        self.assertEqual(rval, decimal.Decimal('1.1'))
 -
++    @unittest.skip('keyword argument not supported')                            ###
      def test_float(self):
          rval = self.loads('1', parse_int=float)
          self.assertTrue(isinstance(rval, float))
-@@ -77,23 +71,9 @@
+@@ -20,6 +16,7 @@
+         self.assertEqual(self.loads('[]'), [])
+         self.assertEqual(self.loads('""'), "")
+ 
++    @unittest.skip('keyword argument not supported')                            ###
+     def test_object_pairs_hook(self):
+         s = '{"xkd":1, "kcw":2, "art":3, "hxm":4, "qrt":5, "pad":6, "hoy":7}'
+         p = [("xkd", 1), ("kcw", 2), ("art", 3), ("hxm", 4),
+@@ -55,6 +52,7 @@
+         self.assertIs(a, c)
+         self.assertIs(b, d)
+ 
++    @unittest.expectedFailure                                                   ###
+     def test_keys_reuse(self):
+         s = '[{"a_key": 1, "b_\xe9": 2}, {"a_key": 3, "b_\xe9": 4}]'
+         self.check_keys_reuse(s, self.loads)
+@@ -62,14 +60,16 @@
+ 
+     def test_extra_data(self):
+         s = '[1, 2, 3]5'
+-        msg = 'Extra data'
++        msg = 'syntax error'                                                    ###
+         self.assertRaisesRegex(ValueError, msg, self.loads, s)
+ 
++    @unittest.expectedFailure                                                   ###
+     def test_invalid_escape(self):
+         s = '["abc\\y"]'
+         msg = 'escape'
+         self.assertRaisesRegex(ValueError, msg, self.loads, s)
+ 
++    @unittest.expectedFailure                                                   ###
+     def test_invalid_input_type(self):
+         msg = 'the JSON object must be str'
+         for value in [1, 3.14, b'bytes', b'\xff\x00', [], {}, None]:
+@@ -77,23 +77,6 @@
          with self.assertRaisesRegex(TypeError, msg):
              self.json.load(BytesIO(b'[1,2,3]'))
  
@@ -33,11 +69,11 @@
 -        bom_in_str = '"{}"'.format(''.encode('utf-8-sig').decode('utf-8'))
 -        self.assertEqual(self.loads(bom_in_str), '\ufeff')
 -        self.assertEqual(self.json.load(StringIO(bom_in_str)), '\ufeff')
--
-     def test_negative_index(self):
-         d = self.json.JSONDecoder()
-         self.assertRaises(ValueError, d.raw_decode, 'a'*42, -50000)
  
- class TestPyDecode(TestDecode, PyTest): pass
--class TestCDecode(TestDecode, CTest): pass
+-    def test_negative_index(self):
+-        d = self.json.JSONDecoder()
+-        self.assertRaises(ValueError, d.raw_decode, 'a'*42, -50000)
+-
+-class TestPyDecode(TestDecode, PyTest): pass
+ class TestCDecode(TestDecode, CTest): pass
 +

@@ -1,8 +1,18 @@
 --- <CPython-3.4.9>/test/test_json/test_default.py
 +++ lib/test/test_json/test_default.py
-@@ -9,4 +9,4 @@
+@@ -1,12 +1,14 @@
++import unittest                                                                 ###
+ from test.test_json import PyTest, CTest
  
  
- class TestPyDefault(TestDefault, PyTest): pass
--class TestCDefault(TestDefault, CTest): pass
+ class TestDefault:
++    @unittest.skip('keyword argument not supported')                            ###
+     def test_default(self):
+         self.assertEqual(
+             self.dumps(type, default=repr),
+             self.dumps(repr(type)))
+ 
+ 
+-class TestPyDefault(TestDefault, PyTest): pass
+ class TestCDefault(TestDefault, CTest): pass
 +

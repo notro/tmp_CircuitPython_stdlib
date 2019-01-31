@@ -1,3 +1,4 @@
+import unittest                                                                 ###
 import math
 from test.test_json import PyTest, CTest
 
@@ -17,6 +18,7 @@ class TestFloat:
         self.assertEqual(self.loads('[23456789012E666]'), [float('inf')])
         self.assertEqual(self.loads('[-23456789012E666]'), [float('-inf')])
 
+    @unittest.expectedFailure                                                   ###
     def test_allow_nan(self):
         for val in (float('inf'), float('-inf'), float('nan')):
             out = self.dumps([val])
@@ -29,4 +31,4 @@ class TestFloat:
             self.assertRaises(ValueError, self.dumps, [val], allow_nan=False)
 
 
-class TestPyFloat(TestFloat, PyTest): pass
+class TestCFloat(TestFloat, CTest): pass
