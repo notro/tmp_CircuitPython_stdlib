@@ -1026,10 +1026,10 @@ def create_empty_file(filename):
 #        file.close()
 #        unlink(TESTFN)
 #
-#def check_syntax_error(testcase, statement):
-#    testcase.assertRaises(SyntaxError, compile, statement,
-#                          '<test string>', 'exec')
-#
+def check_syntax_error(testcase, statement):
+    testcase.assertRaises(SyntaxError, compile, statement,
+                          '<test string>', 'exec')
+
 #def open_urlresource(url, *args, **kw):
 #    import urllib.request, urllib.parse
 #
