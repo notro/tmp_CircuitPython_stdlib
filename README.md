@@ -1,5 +1,7 @@
 This is an experiment to see what it takes to port the [CPython standard library](https://github.com/python/cpython/tree/v3.4.9/Lib) to CircuitPython on an [Adafruit Metro M4](https://www.adafruit.com/product/3382) which has 192kB of RAM.
 
+I have now moved to a [Adafruit Grand Central M4 Express](https://www.adafruit.com/product/4064) which has 256kB of RAM. The extra 64kB of RAM has made it far easier to port tests over. The libraries should still work on an Metro M4.
+
 The diff from CPython is retained in the source files in the following way:
 - No lines are removed
 - Lines that are not needed/supported or is failing on CircuitPython are commented out with a single ```#``` at the beginning of the line
@@ -34,10 +36,11 @@ True
 - many more... probably
 
 
-Test script to run on the board:
+Running tests on the board:
 ```python
 verbosity=2
 
+# Might not be necessary, at least not on a Grand Central
 import supervisor
 supervisor.set_next_stack_limit(12 * 1024)
 
@@ -65,6 +68,34 @@ unittest.main(module='test.test_os', verbosity=verbosity)
 
 
 ```
+
+It is not possible to run all tests in one REPL session. The reason is that strings are added to the [qstr pool](http://elixir.tronnes.org/circuitpython/latest/source/py/qstr.c), but this pool can not be garbage collected. This means that strings are still using memory even though the object that referenced it is gone.
+
+A modified regrtest.py can be used on the host to run each test module in its own REPL session:
+```
+$ time python3 -u regrtest.py --board=/dev/ttyACM1
+== CircuitPython 3.4.0
+==   BOARD AND STUFF little-endian
+==   hash algorithm: unknown 32bit
+==
+Testing with flags: 0
+[  1/133] test_grammar
+...
+[133/133/2] test_zipfile4
+122 tests OK.
+2 tests failed:
+    test_json test_unittest
+9 tests skipped:
+    test_binascii test_fileio test_finalization test_fractions
+    test_funcattrs test_zipfile test_zipfile2 test_zipfile3
+    test_zipfile4
+
+real    23m18.124s
+user    0m17.713s
+sys     0m3.242s
+
+```
+
 
 Memory use
 ----------
