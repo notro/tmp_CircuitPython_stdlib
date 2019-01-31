@@ -108,20 +108,20 @@ UnicodeDecodeError = UnicodeError                                               
 FileNotFoundError = OSError                                                     ###
 NotADirectoryError = OSError                                                    ###
 
-#class Error(Exception):
-#    """Base class for regression test exceptions."""
-#
-#class TestFailed(Error):
-#    """Test failed."""
-#
-#class ResourceDenied(unittest.SkipTest):
-#    """Test skipped because it requested a disallowed resource.
-#
-#    This is raised when a test calls requires() for a resource that
-#    has not be enabled.  It is used to distinguish between expected
-#    and unexpected skips.
-#    """
-#
+class Error(Exception):
+    """Base class for regression test exceptions."""
+
+class TestFailed(Error):
+    """Test failed."""
+
+class ResourceDenied(unittest.SkipTest):
+    """Test skipped because it requested a disallowed resource.
+
+    This is raised when a test calls requires() for a resource that
+    has not be enabled.  It is used to distinguish between expected
+    and unexpected skips.
+    """
+
 #@contextlib.contextmanager
 #def _ignore_deprecated_imports(ignore=True):
 #    """Context manager to suppress package and module deprecation
@@ -195,26 +195,26 @@ def import_module(name, deprecated=False, *, required_on=()):
 #        return unittest.expectedFailure
 #    return lambda f: f
 #
-#def load_package_tests(pkg_dir, loader, standard_tests, pattern):
-#    """Generic load_tests implementation for simple test packages.
-#
-#    Most packages can implement load_tests using this function as follows:
-#
-#       def load_tests(*args):
-#           return load_package_tests(os.path.dirname(__file__), *args)
-#    """
-#    if pattern is None:
-#        pattern = "test*"
-#    top_dir = os.path.dirname(              # Lib
-#                  os.path.dirname(              # test
-#                      os.path.dirname(__file__)))   # support
-#    package_tests = loader.discover(start_dir=pkg_dir,
-#                                    top_level_dir=top_dir,
-#                                    pattern=pattern)
-#    standard_tests.addTests(package_tests)
-#    return standard_tests
-#
-#
+def load_package_tests(pkg_dir, loader, standard_tests, pattern):
+    """Generic load_tests implementation for simple test packages.
+
+    Most packages can implement load_tests using this function as follows:
+
+       def load_tests(*args):
+           return load_package_tests(os.path.dirname(__file__), *args)
+    """
+    if pattern is None:
+        pattern = "test*"
+    top_dir = os.path.dirname(              # Lib
+                  os.path.dirname(              # test
+                      os.path.dirname(__file__)))   # support
+    package_tests = loader.discover(start_dir=pkg_dir,
+                                    top_level_dir=top_dir,
+                                    pattern=pattern)
+    standard_tests.addTests(package_tests)
+    return standard_tests
+
+
 #def import_fresh_module(name, fresh=(), blocked=(), deprecated=False):
 #    """Import and return a module, deliberately bypassing sys.modules.
 #
@@ -275,12 +275,12 @@ def import_module(name, deprecated=False, *, required_on=()):
 #        return attribute
 #
 verbose = 1              # Flag set to 0 by regrtest.py
-#use_resources = None     # Flag set to [] by regrtest.py
+use_resources = None     # Flag set to [] by regrtest.py
 #max_memuse = 0           # Disable bigmem tests (they will still be run with
 #                         # small sizes, to make sure they work.)
 #real_max_memuse = 0
-#failfast = False
-#match_tests = None
+failfast = False
+match_tests = None
 #
 ## _original_stdout is meant to hold stdout at the time regrtest began.
 ## This may be "the real" stdout, or IDLE's emulation of stdout, or whatever.
@@ -293,12 +293,12 @@ verbose = 1              # Flag set to 0 by regrtest.py
 #def get_original_stdout():
 #    return _original_stdout or sys.stdout
 #
-#def unload(name):
-#    try:
-#        del sys.modules[name]
-#    except KeyError:
-#        pass
-#
+def unload(name):
+    try:
+        del sys.modules[name]
+    except KeyError:
+        pass
+
 #if sys.platform.startswith("win"):
 #    def _waitfor(func, pathname, waitall=False):
 #        # Perform the operation
@@ -486,23 +486,23 @@ def rmtree(path):
 #
 #    return _is_gui_available.result
 #
-#def is_resource_enabled(resource):
-#    """Test whether a resource is enabled.
-#
-#    Known resources are set by regrtest.py.  If not running under regrtest.py,
-#    all resources are assumed enabled unless use_resources has been set.
-#    """
-#    return use_resources is None or resource in use_resources
-#
-#def requires(resource, msg=None):
-#    """Raise ResourceDenied if the specified resource is not available."""
+def is_resource_enabled(resource):
+    """Test whether a resource is enabled.
+
+    Known resources are set by regrtest.py.  If not running under regrtest.py,
+    all resources are assumed enabled unless use_resources has been set.
+    """
+    return use_resources is None or resource in use_resources
+
+def requires(resource, msg=None):
+    """Raise ResourceDenied if the specified resource is not available."""
 #    if resource == 'gui' and not _is_gui_available():
 #        raise ResourceDenied(_is_gui_available.reason)
-#    if not is_resource_enabled(resource):
-#        if msg is None:
-#            msg = "Use of the %r resource not enabled" % resource
-#        raise ResourceDenied(msg)
-#
+    if not is_resource_enabled(resource):
+        if msg is None:
+            msg = "Use of the %r resource not enabled" % resource
+        raise ResourceDenied(msg)
+
 #def _requires_unix_version(sysname, min_version):
 #    """Decorator raising SkipTest if the OS is `sysname` and the version is less
 #    than `min_version`.
@@ -1683,15 +1683,15 @@ def create_empty_file(filename):
 #            return f(self)
 #    return wrapper
 #
-##=======================================================================
-## unittest integration.
-#
-#class BasicTestRunner:
-#    def run(self, test):
-#        result = unittest.TestResult()
-#        test(result)
-#        return result
-#
+#=======================================================================
+# unittest integration.
+
+class BasicTestRunner:
+    def run(self, test):
+        result = unittest.TestResult()
+        test(result)
+        return result
+
 #def _id(obj):
 #    return obj
 #
@@ -1770,62 +1770,62 @@ def create_empty_file(filename):
 #    return no_tracing(cpython_only(test))
 #
 #
-#def _filter_suite(suite, pred):
-#    """Recursively filter test cases in a suite based on a predicate."""
-#    newtests = []
-#    for test in suite._tests:
-#        if isinstance(test, unittest.TestSuite):
-#            _filter_suite(test, pred)
-#            newtests.append(test)
-#        else:
-#            if pred(test):
-#                newtests.append(test)
-#    suite._tests = newtests
-#
-#def _run_suite(suite):
-#    """Run tests from a unittest.TestSuite-derived class."""
-#    if verbose:
-#        runner = unittest.TextTestRunner(sys.stdout, verbosity=2,
-#                                         failfast=failfast)
-#    else:
-#        runner = BasicTestRunner()
-#
-#    result = runner.run(suite)
-#    if not result.wasSuccessful():
-#        if len(result.errors) == 1 and not result.failures:
-#            err = result.errors[0][1]
-#        elif len(result.failures) == 1 and not result.errors:
-#            err = result.failures[0][1]
-#        else:
-#            err = "multiple errors occurred"
-#            if not verbose: err += "; run in verbose mode for details"
-#        raise TestFailed(err)
-#
-#
-#def run_unittest(*classes):
-#    """Run tests from unittest.TestCase-derived classes."""
-#    valid_types = (unittest.TestSuite, unittest.TestCase)
-#    suite = unittest.TestSuite()
-#    for cls in classes:
-#        if isinstance(cls, str):
-#            if cls in sys.modules:
-#                suite.addTest(unittest.findTestCases(sys.modules[cls]))
-#            else:
-#                raise ValueError("str arguments must be keys in sys.modules")
-#        elif isinstance(cls, valid_types):
-#            suite.addTest(cls)
-#        else:
-#            suite.addTest(unittest.makeSuite(cls))
-#    def case_pred(test):
-#        if match_tests is None:
-#            return True
-#        for name in test.id().split("."):
-#            if fnmatch.fnmatchcase(name, match_tests):
-#                return True
-#        return False
-#    _filter_suite(suite, case_pred)
-#    _run_suite(suite)
-#
+def _filter_suite(suite, pred):
+    """Recursively filter test cases in a suite based on a predicate."""
+    newtests = []
+    for test in suite._tests:
+        if isinstance(test, unittest.TestSuite):
+            _filter_suite(test, pred)
+            newtests.append(test)
+        else:
+            if pred(test):
+                newtests.append(test)
+    suite._tests = newtests
+
+def _run_suite(suite):
+    """Run tests from a unittest.TestSuite-derived class."""
+    if verbose:
+        runner = unittest.TextTestRunner(sys.stdout, verbosity=2,
+                                         failfast=failfast)
+    else:
+        runner = BasicTestRunner()
+
+    result = runner.run(suite)
+    if not result.wasSuccessful():
+        if len(result.errors) == 1 and not result.failures:
+            err = result.errors[0][1]
+        elif len(result.failures) == 1 and not result.errors:
+            err = result.failures[0][1]
+        else:
+            err = "multiple errors occurred"
+            if not verbose: err += "; run in verbose mode for details"
+        raise TestFailed(err)
+
+
+def run_unittest(*classes):
+    """Run tests from unittest.TestCase-derived classes."""
+    valid_types = (unittest.TestSuite, unittest.TestCase)
+    suite = unittest.TestSuite()
+    for cls in classes:
+        if isinstance(cls, str):
+            if cls in sys.modules:
+                suite.addTest(unittest.findTestCases(sys.modules[cls]))
+            else:
+                raise ValueError("str arguments must be keys in sys.modules")
+        elif isinstance(cls, valid_types):
+            suite.addTest(cls)
+        else:
+            suite.addTest(unittest.makeSuite(cls))
+    def case_pred(test):
+        if match_tests is None:
+            return True
+        for name in test.id().split("."):
+            if fnmatch.fnmatchcase(name, match_tests):
+                return True
+        return False
+    _filter_suite(suite, case_pred)
+    _run_suite(suite)
+
 ##=======================================================================
 ## Check for the presence of docstrings.
 #
