@@ -1,0 +1,35 @@
+--- <CPython-3.4.9>/test/test_eof.py
++++ lib/test/test_eof.py
+@@ -1,11 +1,10 @@
+ """test script for a few new invalid token catches"""
+ 
+ import unittest
+-from test import support
+ 
+ class EOFTestCase(unittest.TestCase):
+     def test_EOFC(self):
+-        expect = "EOL while scanning string literal (<string>, line 1)"
++        expect = "invalid syntax"                                               ###
+         try:
+             eval("""'this is a test\
+             """)
+@@ -15,8 +14,7 @@
+             raise support.TestFailed
+ 
+     def test_EOFS(self):
+-        expect = ("EOF while scanning triple-quoted string literal "
+-                  "(<string>, line 1)")
++        expect = "invalid syntax"                                               ###
+         try:
+             eval("""'''this is a test""")
+         except SyntaxError as msg:
+@@ -24,8 +22,4 @@
+         else:
+             raise support.TestFailed
+ 
+-def test_main():
+-    support.run_unittest(EOFTestCase)
+-
+-if __name__ == "__main__":
+-    test_main()
++

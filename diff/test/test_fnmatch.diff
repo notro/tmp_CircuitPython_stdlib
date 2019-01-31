@@ -33,8 +33,16 @@
  
  
  class FilterTestCase(unittest.TestCase):
-@@ -87,3 +70,4 @@
+@@ -79,11 +62,4 @@
+         self.assertEqual(filter(['a', 'b'], 'a'), ['a'])
  
- if __name__ == "__main__":
-     test_main()
+ 
+-def test_main():
+-    support.run_unittest(FnmatchTestCase,
+-                         TranslateTestCase,
+-                         FilterTestCase)
+-
+-
+-if __name__ == "__main__":
+-    test_main()
 +

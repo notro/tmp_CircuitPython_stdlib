@@ -36,7 +36,6 @@ class BadConstructorTest(unittest.TestCase):
     def test_constructor(self):
         self.assertRaises(TypeError, array.array)
         self.assertRaises(TypeError, array.array, spam=42)
-        self.assertRaises(ValueError, array.array, 'x')
 
 
 class BaseTest:

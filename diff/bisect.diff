@@ -1,0 +1,7 @@
+--- <CPython-3.4.9>/bisect.py
++++ lib/bisect.py
+@@ -90,3 +90,4 @@
+     from _bisect import *
+ except ImportError:
+     pass
++

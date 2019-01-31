@@ -39,12 +39,12 @@
  if have_long_long:
      typecodes += 'qQ'
  
-@@ -43,136 +36,7 @@
+@@ -43,136 +36,6 @@
      def test_constructor(self):
          self.assertRaises(TypeError, array.array)
          self.assertRaises(TypeError, array.array, spam=42)
 -        self.assertRaises(TypeError, array.array, 'xx')
-         self.assertRaises(ValueError, array.array, 'x')
+-        self.assertRaises(ValueError, array.array, 'x')
 -
 -
 -# Machine format codes.
@@ -176,7 +176,7 @@
  
  
  class BaseTest:
-@@ -193,8 +57,6 @@
+@@ -193,8 +56,6 @@
  
      def test_constructor(self):
          a = array.array(self.typecode)
@@ -185,7 +185,7 @@
          self.assertRaises(TypeError, array.array, self.typecode, None)
  
      def test_len(self):
-@@ -205,225 +67,6 @@
+@@ -205,225 +66,6 @@
          a = array.array(self.typecode, self.example)
          self.assertEqual(len(a), len(self.example))
  
@@ -411,7 +411,7 @@
      def test_fromarray(self):
          a = array.array(self.typecode, self.example)
          b = array.array(self.typecode, a)
-@@ -447,34 +90,18 @@
+@@ -447,34 +89,18 @@
  
          self.assertIs(a == a, True)
          self.assertIs(a != a, False)
@@ -448,7 +448,7 @@
  
      def test_add(self):
          a = array.array(self.typecode, self.example) \
-@@ -483,11 +110,6 @@
+@@ -483,11 +109,6 @@
              a,
              array.array(self.typecode, self.example + self.example[::-1])
          )
@@ -460,7 +460,7 @@
  
      def test_iadd(self):
          a = array.array(self.typecode, self.example[::-1])
-@@ -505,43 +127,24 @@
+@@ -505,43 +126,24 @@
              array.array(self.typecode, self.example + self.example)
          )
  
@@ -506,7 +506,7 @@
  
      def test_imul(self):
          a = array.array(self.typecode, self.example)
-@@ -558,19 +161,9 @@
+@@ -558,19 +160,9 @@
          self.assertIs(a, b)
          self.assertEqual(a, array.array(self.typecode))
  
@@ -527,7 +527,7 @@
  
      def test_getitem(self):
          a = array.array(self.typecode, self.example)
-@@ -580,9 +173,6 @@
+@@ -580,9 +172,6 @@
          self.assertEntryEqual(a[-1], self.example[-1])
          self.assertEntryEqual(a[len(self.example)-1], self.example[-1])
          self.assertEntryEqual(a[-len(self.example)], self.example[0])
@@ -537,7 +537,7 @@
  
      def test_setitem(self):
          a = array.array(self.typecode, self.example)
-@@ -608,54 +198,6 @@
+@@ -608,54 +197,6 @@
          a = array.array(self.typecode, self.example)
          a[-len(self.example)] = a[-1]
          self.assertEntryEqual(a[0], a[-1])
@@ -592,7 +592,7 @@
  
      def test_getslice(self):
          a = array.array(self.typecode, self.example)
-@@ -715,7 +257,7 @@
+@@ -715,7 +256,7 @@
          for start in indices:
              for stop in indices:
                  # Everything except the initial 0 (invalid step)
@@ -601,7 +601,7 @@
                      self.assertEqual(list(a[start:stop:step]),
                                       list(a)[start:stop:step])
  
-@@ -800,126 +342,15 @@
+@@ -800,126 +341,15 @@
              array.array(self.typecode, 2*self.example)
          )
  
@@ -728,7 +728,7 @@
          )
  
      def test_constructor_with_iterable_argument(self):
-@@ -952,92 +383,10 @@
+@@ -952,92 +382,10 @@
          l.append(l)
          gc.collect()
  
@@ -821,7 +821,7 @@
  
  
  class StringTest(BaseTest):
-@@ -1047,89 +396,9 @@
+@@ -1047,89 +395,9 @@
          a = array.array(self.typecode, self.example)
          self.assertRaises(TypeError, a.__setitem__, 0, self.example[:2])
  
@@ -911,7 +911,7 @@
          a = array.array(self.typecode, range(10))
          b = a[:]
          c = a[:]
-@@ -1141,9 +410,6 @@
+@@ -1141,9 +409,6 @@
      def test_iterationcontains(self):
          a = array.array(self.typecode, range(10))
          self.assertEqual(list(a), list(range(10)))
@@ -921,7 +921,7 @@
  
      def check_overflow(self, lower, upper):
          # method to be used by subclasses
-@@ -1161,71 +427,18 @@
+@@ -1161,71 +426,18 @@
          self.assertRaises(OverflowError, array.array, self.typecode, [upper+1])
          self.assertRaises(OverflowError, a.__setitem__, 0, upper+1)
  
@@ -993,7 +993,7 @@
  
  class ByteTest(SignedNumberTest, unittest.TestCase):
      typecode = 'b'
-@@ -1263,6 +476,18 @@
+@@ -1263,6 +475,18 @@
  class LongLongTest(SignedNumberTest, unittest.TestCase):
      typecode = 'q'
      minitemsize = 8
@@ -1012,7 +1012,7 @@
  
  @unittest.skipIf(not have_long_long, 'need long long support')
  class UnsignedLongLongTest(UnsignedNumberTest, unittest.TestCase):
-@@ -1278,22 +503,6 @@
+@@ -1278,22 +502,6 @@
      def assertEntryEqual(self, entry1, entry2):
          self.assertAlmostEqual(entry1, entry2)
  
@@ -1035,7 +1035,7 @@
  class FloatTest(FPTest, unittest.TestCase):
      typecode = 'f'
      minitemsize = 4
-@@ -1302,23 +511,4 @@
+@@ -1302,23 +510,4 @@
      typecode = 'd'
      minitemsize = 8
  

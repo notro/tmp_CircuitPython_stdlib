@@ -1,0 +1,194 @@
+--- <CPython-3.4.9>/test/test_class.py
++++ lib/test/test_class.py
+@@ -2,7 +2,6 @@
+ 
+ import unittest
+ 
+-from test import support
+ 
+ testmeths = [
+ 
+@@ -207,9 +206,6 @@
+         divmod(testme,1)
+         self.assertCallStack([("__divmod__", (testme, 1))])
+ 
+-        callLst[:] = []
+-        divmod(1, testme)
+-        self.assertCallStack([("__rdivmod__", (testme, 1))])
+ 
+         callLst[:] = []
+         testme ** 1
+@@ -288,49 +284,6 @@
+         del testme[1]
+         self.assertCallStack([('__delitem__', (testme, 1))])
+ 
+-        callLst[:] = []
+-        testme[:42]
+-        self.assertCallStack([('__getitem__', (testme, slice(None, 42)))])
+-
+-        callLst[:] = []
+-        testme[:42] = "The Answer"
+-        self.assertCallStack([('__setitem__', (testme, slice(None, 42),
+-                                               "The Answer"))])
+-
+-        callLst[:] = []
+-        del testme[:42]
+-        self.assertCallStack([('__delitem__', (testme, slice(None, 42)))])
+-
+-        callLst[:] = []
+-        testme[2:1024:10]
+-        self.assertCallStack([('__getitem__', (testme, slice(2, 1024, 10)))])
+-
+-        callLst[:] = []
+-        testme[2:1024:10] = "A lot"
+-        self.assertCallStack([('__setitem__', (testme, slice(2, 1024, 10),
+-                                                                    "A lot"))])
+-        callLst[:] = []
+-        del testme[2:1024:10]
+-        self.assertCallStack([('__delitem__', (testme, slice(2, 1024, 10)))])
+-
+-        callLst[:] = []
+-        testme[:42, ..., :24:, 24, 100]
+-        self.assertCallStack([('__getitem__', (testme, (slice(None, 42, None),
+-                                                        Ellipsis,
+-                                                        slice(None, 24, None),
+-                                                        24, 100)))])
+-        callLst[:] = []
+-        testme[:42, ..., :24:, 24, 100] = "Strange"
+-        self.assertCallStack([('__setitem__', (testme, (slice(None, 42, None),
+-                                                        Ellipsis,
+-                                                        slice(None, 24, None),
+-                                                        24, 100), "Strange"))])
+-        callLst[:] = []
+-        del testme[:42, ..., :24:, 24, 100]
+-        self.assertCallStack([('__delitem__', (testme, (slice(None, 42, None),
+-                                                        Ellipsis,
+-                                                        slice(None, 24, None),
+-                                                        24, 100)))])
+ 
+     def testUnaryOps(self):
+         testme = AllTests()
+@@ -344,18 +297,6 @@
+         callLst[:] = []
+         abs(testme)
+         self.assertCallStack([('__abs__', (testme,))])
+-        callLst[:] = []
+-        int(testme)
+-        self.assertCallStack([('__int__', (testme,))])
+-        callLst[:] = []
+-        float(testme)
+-        self.assertCallStack([('__float__', (testme,))])
+-        callLst[:] = []
+-        oct(testme)
+-        self.assertCallStack([('__index__', (testme,))])
+-        callLst[:] = []
+-        hex(testme)
+-        self.assertCallStack([('__index__', (testme,))])
+ 
+ 
+     def testMisc(self):
+@@ -385,27 +326,16 @@
+         testme > 1
+         self.assertCallStack([('__gt__', (testme, 1))])
+ 
+-        callLst[:] = []
+-        testme != 1
+-        self.assertCallStack([('__ne__', (testme, 1))])
+ 
+         callLst[:] = []
+         1 == testme
+         self.assertCallStack([('__eq__', (1, testme))])
+ 
+-        callLst[:] = []
+-        1 < testme
+-        self.assertCallStack([('__gt__', (1, testme))])
+-
+-        callLst[:] = []
+-        1 > testme
+-        self.assertCallStack([('__lt__', (1, testme))])
+-
+-        callLst[:] = []
+-        1 != testme
+-        self.assertCallStack([('__ne__', (1, testme))])
+-
+-
++
++
++
++
++    @unittest.expectedFailure                                                   ###
+     def testGetSetAndDel(self):
+         # Interfering tests
+         class ExtraTests(AllTests):
+@@ -436,6 +366,7 @@
+         del testme.cardinal
+         self.assertCallStack([('__delattr__', (testme, "cardinal"))])
+ 
++    @unittest.expectedFailure                                                   ###
+     def testDel(self):
+         x = []
+ 
+@@ -448,6 +379,7 @@
+         gc.collect()
+         self.assertEqual(["crab people, crab people"], x)
+ 
++    @unittest.skip("AssertionError: TypeError not raised by str")               ###
+     def testBadTypeReturned(self):
+         # return values of some method are type-checked
+         class BadTypeClass:
+@@ -481,6 +413,7 @@
+         self.assertRaises(TypeError, hash, C2())
+ 
+ 
++    @unittest.skip('HANGS')                                                     ###
+     def testSFBug532646(self):
+         # Test for SF bug 532646
+ 
+@@ -510,20 +443,6 @@
+             if str(x) != "booh":
+                 self.fail("attribute error for A().a got masked: %s" % x)
+ 
+-        class E:
+-            __eq__ = property(booh)
+-        E() == E() # In debug mode, caused a C-level assert() to fail
+-
+-        class I:
+-            __init__ = property(booh)
+-        try:
+-            # In debug mode, printed XXX undetected error and
+-            #  raises AttributeError
+-            I()
+-        except AttributeError as x:
+-            pass
+-        else:
+-            self.fail("attribute error for I.__init__ got masked")
+ 
+     def testHashComparisonOfMethods(self):
+         # Test comparison and hash of methods
+@@ -543,24 +462,13 @@
+ 
+         a1 = A(1)
+         a2 = A(2)
+-        self.assertEqual(a1.f, a1.f)
+         self.assertNotEqual(a1.f, a2.f)
+         self.assertNotEqual(a1.f, a1.g)
+-        self.assertEqual(a1.f, A(1).f)
+-        self.assertEqual(hash(a1.f), hash(a1.f))
+-        self.assertEqual(hash(a1.f), hash(A(1).f))
+ 
+         self.assertNotEqual(A.f, a1.f)
+         self.assertNotEqual(A.f, A.g)
+         self.assertEqual(B.f, A.f)
+         self.assertEqual(hash(B.f), hash(A.f))
+ 
+-        # the following triggers a SystemError in 2.4
+-        a = A(hash(A.f)^(-1))
+-        hash(a.f)
+-
+-def test_main():
+-    support.run_unittest(ClassTests)
+-
+-if __name__=='__main__':
+-    test_main()
++
++

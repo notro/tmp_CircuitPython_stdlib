@@ -131,7 +131,7 @@
  
      def createTests(self):
          if self.testNames is None:
-@@ -145,88 +121,112 @@
+@@ -145,88 +121,120 @@
              self.test = self.testLoader.loadTestsFromNames(self.testNames,
                                                             self.module)
  
@@ -295,6 +295,14 @@
 +        msg += '\n'                                                             ###
 +                                                                                ###
 +        self.testRunner.stream.write(msg)                                       ###
++        class Result: pass                                                      ###
++        self.result = Result()                                                  ###
++        self.result.testsRun = run                                              ###
++        self.result.errors = [None] * errors                                    ###
++        self.result.failures = [None] * failures                                ###
++        self.result.skipped = [None] * skipped                                  ###
++        self.result.expectedFailures = [None] * expectedFails                   ###
++        self.result.unexpectedSuccesses = [None] * unexpectedSuccesses          ###
 +                                                                                ###
      def _do_discovery(self, argv, Loader=None):
 -        self.start = '.'
@@ -323,7 +331,7 @@
          if self.testRunner is None:
              self.testRunner = runner.TextTestRunner
          if isinstance(self.testRunner, type):
-@@ -238,11 +238,17 @@
+@@ -238,11 +246,17 @@
              except TypeError:
                  # didn't accept the verbosity, buffer or failfast arguments
                  testRunner = self.testRunner()

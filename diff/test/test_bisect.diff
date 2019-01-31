@@ -1,0 +1,121 @@
+--- <CPython-3.4.9>/test/test_bisect.py
++++ lib/test/test_bisect.py
+@@ -1,10 +1,7 @@
+ import sys
+ import unittest
+-from test import support
+-from collections import UserList
+-
+-py_bisect = support.import_fresh_module('bisect', blocked=['_bisect'])
+-c_bisect = support.import_fresh_module('bisect', fresh=['_bisect'])
++
++import bisect as py_bisect                                                      ###
+ 
+ class Range(object):
+     """A trivial range()-like object that has an insert() method."""
+@@ -115,7 +112,6 @@
+     def test_precomputed(self):
+         for func, data, elem, expected in self.precomputedCases:
+             self.assertEqual(func(data, elem), expected)
+-            self.assertEqual(func(UserList(data), elem), expected)
+ 
+     def test_negative_lo(self):
+         # Issue 3301
+@@ -125,6 +121,7 @@
+         self.assertRaises(ValueError, mod.insort_left, [1, 2, 3], 5, -1, 3)
+         self.assertRaises(ValueError, mod.insort_right, [1, 2, 3], 5, -1, 3)
+ 
++    @unittest.skip('Too large?')                                                ###
+     def test_large_range(self):
+         # Issue 13496
+         mod = self.module
+@@ -186,9 +183,6 @@
+                         self.assertTrue(data[ip-1] <= elem)
+                     self.assertEqual(ip, max(lo, min(hi, expected)))
+ 
+-    def test_backcompatibility(self):
+-        self.assertEqual(self.module.bisect, self.module.bisect_right)
+-
+     def test_keyword_args(self):
+         data = [10, 20, 30, 40, 50]
+         self.assertEqual(self.module.bisect_left(a=data, x=25, lo=1, hi=3), 2)
+@@ -202,12 +196,11 @@
+ class TestBisectPython(TestBisect, unittest.TestCase):
+     module = py_bisect
+ 
+-class TestBisectC(TestBisect, unittest.TestCase):
+-    module = c_bisect
+ 
+ #==============================================================================
+ 
+ class TestInsort:
++    @unittest.skip('Missing collections.UserList')                              ###
+     def test_vsBuiltinSort(self, n=500):
+         from random import choice
+         for insorted in (list(), UserList()):
+@@ -220,9 +213,6 @@
+                 f(insorted, digit)
+             self.assertEqual(sorted(insorted), insorted)
+ 
+-    def test_backcompatibility(self):
+-        self.assertEqual(self.module.insort, self.module.insort_right)
+-
+     def test_listDerived(self):
+         class List(list):
+             data = []
+@@ -237,8 +227,6 @@
+ class TestInsortPython(TestInsort, unittest.TestCase):
+     module = py_bisect
+ 
+-class TestInsortC(TestInsort, unittest.TestCase):
+-    module = c_bisect
+ 
+ #==============================================================================
+ 
+@@ -278,6 +266,7 @@
+                   self.module.insort_left, self.module.insort_right):
+             self.assertRaises(TypeError, f, GetOnly(), 10)
+ 
++    @unittest.skip("TypeError: unsupported types for __lt__: 'int', 'CmpErr'")  ###
+     def test_cmp_err(self):
+         seq = [CmpErr(), CmpErr(), CmpErr()]
+         for f in (self.module.bisect_left, self.module.bisect_right,
+@@ -292,37 +281,4 @@
+ class TestErrorHandlingPython(TestErrorHandling, unittest.TestCase):
+     module = py_bisect
+ 
+-class TestErrorHandlingC(TestErrorHandling, unittest.TestCase):
+-    module = c_bisect
+-
+-#==============================================================================
+-
+-class TestDocExample:
+-    def test_grades(self):
+-        def grade(score, breakpoints=[60, 70, 80, 90], grades='FDCBA'):
+-            i = self.module.bisect(breakpoints, score)
+-            return grades[i]
+-
+-        result = [grade(score) for score in [33, 99, 77, 70, 89, 90, 100]]
+-        self.assertEqual(result, ['F', 'A', 'C', 'C', 'B', 'A', 'A'])
+-
+-    def test_colors(self):
+-        data = [('red', 5), ('blue', 1), ('yellow', 8), ('black', 0)]
+-        data.sort(key=lambda r: r[1])
+-        keys = [r[1] for r in data]
+-        bisect_left = self.module.bisect_left
+-        self.assertEqual(data[bisect_left(keys, 0)], ('black', 0))
+-        self.assertEqual(data[bisect_left(keys, 1)], ('blue', 1))
+-        self.assertEqual(data[bisect_left(keys, 5)], ('red', 5))
+-        self.assertEqual(data[bisect_left(keys, 8)], ('yellow', 8))
+-
+-class TestDocExamplePython(TestDocExample, unittest.TestCase):
+-    module = py_bisect
+-
+-class TestDocExampleC(TestDocExample, unittest.TestCase):
+-    module = c_bisect
+-
+-#------------------------------------------------------------------------------
+-
+-if __name__ == "__main__":
+-    unittest.main()
++

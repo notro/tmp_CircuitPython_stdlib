@@ -9,6 +9,20 @@ UnicodeDecodeError = UnicodeError                                               
 FileNotFoundError = OSError                                                     ###
 NotADirectoryError = OSError                                                    ###
 
+class Error(Exception):
+    """Base class for regression test exceptions."""
+
+class TestFailed(Error):
+    """Test failed."""
+
+class ResourceDenied(unittest.SkipTest):
+    """Test skipped because it requested a disallowed resource.
+
+    This is raised when a test calls requires() for a resource that
+    has not be enabled.  It is used to distinguish between expected
+    and unexpected skips.
+    """
+
 def import_module(name, deprecated=False, *, required_on=()):
         try:
             return __import__(name)                                             ###
@@ -16,7 +30,36 @@ def import_module(name, deprecated=False, *, required_on=()):
             raise unittest.SkipTest(str(msg))
 
 
+def load_package_tests(pkg_dir, loader, standard_tests, pattern):
+    """Generic load_tests implementation for simple test packages.
+
+    Most packages can implement load_tests using this function as follows:
+
+       def load_tests(*args):
+           return load_package_tests(os.path.dirname(__file__), *args)
+    """
+    if pattern is None:
+        pattern = "test*"
+    top_dir = os.path.dirname(              # Lib
+                  os.path.dirname(              # test
+                      os.path.dirname(__file__)))   # support
+    package_tests = loader.discover(start_dir=pkg_dir,
+                                    top_level_dir=top_dir,
+                                    pattern=pattern)
+    standard_tests.addTests(package_tests)
+    return standard_tests
+
+
 verbose = 1              # Flag set to 0 by regrtest.py
+use_resources = None     # Flag set to [] by regrtest.py
+failfast = False
+match_tests = None
+def unload(name):
+    try:
+        del sys.modules[name]
+    except KeyError:
+        pass
+
 if True:                                                                        ###
     _unlink = os.unlink
     _rmdir = os.rmdir
@@ -40,6 +83,23 @@ def rmtree(path):
     except FileNotFoundError:
         pass
 
+def is_resource_enabled(resource):
+    """Test whether a resource is enabled.
+
+    Known resources are set by regrtest.py.  If not running under regrtest.py,
+    all resources are assumed enabled unless use_resources has been set.
+    """
+    return use_resources is None or resource in use_resources
+
+def requires(resource, msg=None):
+    """Raise ResourceDenied if the specified resource is not available."""
+    if not is_resource_enabled(resource):
+        if msg is None:
+            msg = "Use of the %r resource not enabled" % resource
+        raise ResourceDenied(msg)
+
+def requires_IEEE_754(f):                                                       ###
+    return f                                                                    ###
 TESTFN = '$test'                                                                ###
 
 # FS_NONASCII: non-ASCII character encodable by os.fsencode(),
@@ -243,6 +303,71 @@ def create_empty_file(filename):
     except OSError:                                                             ###
         pass                                                                    ###
     open(filename, 'w').close()                                                 ###
+
+#=======================================================================
+# unittest integration.
+
+class BasicTestRunner:
+    def run(self, test):
+        result = unittest.TestResult()
+        test(result)
+        return result
+
+def _filter_suite(suite, pred):
+    """Recursively filter test cases in a suite based on a predicate."""
+    newtests = []
+    for test in suite._tests:
+        if isinstance(test, unittest.TestSuite):
+            _filter_suite(test, pred)
+            newtests.append(test)
+        else:
+            if pred(test):
+                newtests.append(test)
+    suite._tests = newtests
+
+def _run_suite(suite):
+    """Run tests from a unittest.TestSuite-derived class."""
+    if verbose:
+        runner = unittest.TextTestRunner(sys.stdout, verbosity=2,
+                                         failfast=failfast)
+    else:
+        runner = BasicTestRunner()
+
+    result = runner.run(suite)
+    if not result.wasSuccessful():
+        if len(result.errors) == 1 and not result.failures:
+            err = result.errors[0][1]
+        elif len(result.failures) == 1 and not result.errors:
+            err = result.failures[0][1]
+        else:
+            err = "multiple errors occurred"
+            if not verbose: err += "; run in verbose mode for details"
+        raise TestFailed(err)
+
+
+def run_unittest(*classes):
+    """Run tests from unittest.TestCase-derived classes."""
+    valid_types = (unittest.TestSuite, unittest.TestCase)
+    suite = unittest.TestSuite()
+    for cls in classes:
+        if isinstance(cls, str):
+            if cls in sys.modules:
+                suite.addTest(unittest.findTestCases(sys.modules[cls]))
+            else:
+                raise ValueError("str arguments must be keys in sys.modules")
+        elif isinstance(cls, valid_types):
+            suite.addTest(cls)
+        else:
+            suite.addTest(unittest.makeSuite(cls))
+    def case_pred(test):
+        if match_tests is None:
+            return True
+        for name in test.id().split("."):
+            if fnmatch.fnmatchcase(name, match_tests):
+                return True
+        return False
+    _filter_suite(suite, case_pred)
+    _run_suite(suite)
 
 @contextlib.contextmanager
 def swap_attr(obj, attr, new_val):
