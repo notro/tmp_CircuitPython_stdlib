@@ -46,5 +46,5 @@ class TestSeparators:
         self.assertRaises(TypeError, self.dumps, h, separators=(b', ', b': '))
 
 
-class TestPySeparators(TestSeparators, PyTest): pass
-#class TestCSeparators(TestSeparators, CTest): pass
+#class TestPySeparators(TestSeparators, PyTest): pass
+class TestCSeparators(TestSeparators, CTest): pass

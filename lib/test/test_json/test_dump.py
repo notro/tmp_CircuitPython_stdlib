@@ -1,3 +1,4 @@
+import unittest                                                                 ###
 from io import StringIO
 from test.test_json import PyTest, CTest
 
@@ -12,6 +13,7 @@ class TestDump:
     def test_dumps(self):
         self.assertEqual(self.dumps({}), '{}')
 
+    @unittest.skip('keyword argument not supported')                            ###
     def test_encode_truefalse(self):
         self.assertEqual(self.dumps(
                  {True: False, False: True}, sort_keys=True),
@@ -21,6 +23,7 @@ class TestDump:
                 '{"false": 1, "2": 3.0, "4.0": 5, "6": true}')
 
     # Issue 16228: Crash on encoding resized list
+    @unittest.skip('keyword argument not supported')                            ###
     def test_encode_mutated(self):
         a = [object()] * 10
         def crasher(obj):
@@ -48,9 +51,10 @@ class TestDump:
 #        self.assertEqual(self.dumps(d, sort_keys=True), '{"1337": "true.dat"}')
 #
 
-class TestPyDump(TestDump, PyTest): pass
+#class TestPyDump(TestDump, PyTest): pass
 
-#class TestCDump(TestDump, CTest):
+class TestCDump(TestDump, CTest):
+    pass                                                                        ###
 #
 #    # The size requirement here is hopefully over-estimated (actual
 #    # memory consumption depending on implementation details, and also

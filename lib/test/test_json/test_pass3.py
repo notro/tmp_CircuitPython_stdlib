@@ -20,5 +20,5 @@ class TestPass3:
         self.assertEqual(res, self.loads(out))
 
 
-class TestPyPass3(TestPass3, PyTest): pass
-#class TestCPass3(TestPass3, CTest): pass
+#class TestPyPass3(TestPass3, PyTest): pass
+class TestCPass3(TestPass3, CTest): pass

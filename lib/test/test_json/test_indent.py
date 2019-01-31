@@ -1,3 +1,4 @@
+import unittest                                                                 ###
 #import textwrap
 from io import StringIO
 from test.test_json import PyTest, CTest
@@ -47,6 +48,7 @@ class TestIndent:
 #        self.assertEqual(d4, d2)
 #        self.assertEqual(d5, d3)
 #
+    @unittest.skip('keyword argument not supported')                            ###
     def test_indent0(self):
         h = {3: 1}
         def check(indent, expected):
@@ -63,5 +65,5 @@ class TestIndent:
         check(None, '{"3": 1}')
 
 
-class TestPyIndent(TestIndent, PyTest): pass
-#class TestCIndent(TestIndent, CTest): pass
+#class TestPyIndent(TestIndent, PyTest): pass
+class TestCIndent(TestIndent, CTest): pass
