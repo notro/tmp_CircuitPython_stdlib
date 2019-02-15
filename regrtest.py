@@ -438,9 +438,6 @@ def _parse_args(args, **kwargs):
     parser = _create_parser()
     parser.parse_args(args=args, namespace=ns)
 
-    global board                                                                ###
-    board = ns.board                                                            ###
-                                                                                ###
     if ns.single and ns.fromfile:
         parser.error("-s and -f don't go together!")
     if ns.use_mp and ns.trace:
@@ -600,6 +597,7 @@ def main(tests=None, **kwargs):
         print('board', board)                                                   ###
                                                                                 ###
     board.open()                                                                ###
+    board.repl.reset()                                                          ### The find tests logic can't reset on each step
                                                                                 ###
 #    if ns.slaveargs is not None:
 #        args, kwargs = json.loads(ns.slaveargs)
@@ -821,9 +819,6 @@ def main(tests=None, **kwargs):
 #            worker.join()
 #    else:
     if True:                                                                    ###
-        if ns.verbose3:                                                         ###
-            print("IGNORED -W: stdout can't be redirected")                     ###
-            ns.verbose3 = False                                                 ###
         for test_index, test in enumerate(tests, 1):
             if not ns.quiet:
                 fmt = "[{1:{0}}{2}/{3}] {4}" if bad else "[{1:{0}}{2}] {4}"
@@ -1017,12 +1012,16 @@ def runtest(test, verbose, quiet,
             huntrleaks=False, use_resources=None,
             output_on_failure=False, failfast=False, match_tests=None,
             timeout=None):
-    return board_runtest(board, test, verbose, quiet,                           ###
-            huntrleaks=huntrleaks, use_resources=use_resources,                 ###
-            output_on_failure=output_on_failure, failfast=failfast,             ###
-            match_tests=match_tests, timeout=timeout,                           ###
-            _out=_sys.stdout if verbose else None,                              ###
-            _timeout=300 if timeout is None else timeout)                       ###
+    try:                                                                        ###
+        return board_runtest(board, test, verbose, quiet,                       ###
+                huntrleaks=huntrleaks, use_resources=use_resources,             ###
+                output_on_failure=output_on_failure, failfast=failfast,         ###
+                match_tests=match_tests, timeout=timeout,                       ###
+                _out=_sys.stdout if verbose else None,                          ###
+                _timeout=300 if timeout is None else timeout)                   ###
+    except MemoryError as e:                                                    ###
+        print('\nOut of memory:', e)                                            ###
+        return FAILED, 0                                                        ###
                                                                                 ###
 #    """Run a single test.
 #
