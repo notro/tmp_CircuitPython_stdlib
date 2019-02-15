@@ -121,6 +121,7 @@ This module also defines an exception 'error'.
 
 import ure                                                                      ###
 from ure import DEBUG                                                           ###
+VERBOSE = 0                                                                     ### Dummy to avoid fixing up libraries
 # --------------------------------------------------------------------
 # public interface
 
@@ -134,6 +135,15 @@ def search(pattern, string, flags=0):
     """Scan through string looking for a match to the pattern, returning
     a match object, or None if no match was found."""
     return _compile(pattern, flags).search(string)
+
+def sub(pattern, repl, string, count=0, flags=0):
+    """Return the string obtained by replacing the leftmost
+    non-overlapping occurrences of the pattern in string by the
+    replacement repl.  repl can be either a string or a callable;
+    if a string, backslash escapes in it are processed.  If it is
+    a callable, it's passed the match object and must return
+    a replacement string to be used."""
+    return _compile(pattern, flags).sub(repl, string, count)
 
 
 def split(pattern, string, maxsplit=0, flags=0):

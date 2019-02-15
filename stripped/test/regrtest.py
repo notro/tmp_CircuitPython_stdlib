@@ -225,8 +225,14 @@ def runtest_inner(test, verbose, quiet,
             # Always import it from the test package
             abstest = 'test.' + test
         with saved_test_environment(test, verbose, quiet) as environment:
+            import gc                                                           ###
+            if not quiet:                                                       ###
+                before = gc.mem_free()                                          ###
             start_time = time.time()
             the_module = importlib.import_module(abstest)
+            if not quiet:                                                       ###
+                after = gc.mem_free()                                           ###
+                print('Loading module mem_free: before=%.1fkB, after=%.1fkB' % (before / 1024, after / 1024))  ###
             # If the test has a test_main, that will run the appropriate
             # tests.  If not, use normal unittest test loading.
             test_runner = getattr(the_module, "test_main", None)
@@ -253,7 +259,13 @@ def runtest_inner(test, verbose, quiet,
         else:
             print("test", test, "failed", file=sys.stderr)
         return FAILED, test_time
-    except BaseException as msg:                                                ###
+    except MemoryError as msg:                                                  ###
+        if not quiet:                                                           ###
+            print(test, "Out of memory --", msg, file=sys.stderr)               ###
+            return FAILED, test_time                                            ###
+        else:                                                                   ###
+            raise                                                               ### Let host print message since stdout is not displayed
+    except BaseException as msg:                                                ### Why doesn't traceback.format_exc() work?
         print("test", test, "crashed --", msg, file=sys.stderr)
         return FAILED, test_time
     else:

@@ -1158,7 +1158,22 @@
      try:
          if test.startswith('test.'):
              abstest = test
-@@ -1277,18 +236,14 @@
+@@ -1266,8 +225,14 @@
+             # Always import it from the test package
+             abstest = 'test.' + test
+         with saved_test_environment(test, verbose, quiet) as environment:
++            import gc                                                           ###
++            if not quiet:                                                       ###
++                before = gc.mem_free()                                          ###
+             start_time = time.time()
+             the_module = importlib.import_module(abstest)
++            if not quiet:                                                       ###
++                after = gc.mem_free()                                           ###
++                print('Loading module mem_free: before=%.1fkB, after=%.1fkB' % (before / 1024, after / 1024))  ###
+             # If the test has a test_main, that will run the appropriate
+             # tests.  If not, use normal unittest test loading.
+             test_runner = getattr(the_module, "test_main", None)
+@@ -1277,18 +242,14 @@
                      tests = loader.loadTestsFromModule(the_module)
                      support.run_unittest(tests)
              test_runner()
@@ -1177,7 +1192,7 @@
          return SKIPPED, test_time
      except KeyboardInterrupt:
          raise
-@@ -1297,16 +252,11 @@
+@@ -1297,16 +258,17 @@
              print("test", test, "failed --", msg, file=sys.stderr)
          else:
              print("test", test, "failed", file=sys.stderr)
@@ -1185,7 +1200,13 @@
          return FAILED, test_time
 -    except:
 -        msg = traceback.format_exc()
-+    except BaseException as msg:                                                ###
++    except MemoryError as msg:                                                  ###
++        if not quiet:                                                           ###
++            print(test, "Out of memory --", msg, file=sys.stderr)               ###
++            return FAILED, test_time                                            ###
++        else:                                                                   ###
++            raise                                                               ### Let host print message since stdout is not displayed
++    except BaseException as msg:                                                ### Why doesn't traceback.format_exc() work?
          print("test", test, "crashed --", msg, file=sys.stderr)
 -        sys.stderr.flush()
          return FAILED, test_time
@@ -1195,7 +1216,7 @@
          if environment.changed:
              return ENV_CHANGED, test_time
          return PASSED, test_time
-@@ -1353,236 +303,8 @@
+@@ -1353,236 +315,8 @@
              print(("%r left behind %s %r and it couldn't be "
                  "removed: %s" % (testname, kind, name, msg)), file=sys.stderr)
  

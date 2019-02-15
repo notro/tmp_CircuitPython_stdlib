@@ -304,6 +304,10 @@ def create_empty_file(filename):
         pass                                                                    ###
     open(filename, 'w').close()                                                 ###
 
+def check_syntax_error(testcase, statement):
+    testcase.assertRaises(SyntaxError, compile, statement,
+                          '<test string>', 'exec')
+
 #=======================================================================
 # unittest integration.
 

@@ -1,0 +1,381 @@
+--- <CPython-3.4.9>/configparser.py
++++ lib/configparser.py
+@@ -118,21 +118,24 @@
+         between keys and values are surrounded by spaces.
+ """
+ 
+-from collections.abc import MutableMapping
+-from collections import OrderedDict as _default_dict, ChainMap as _ChainMap
+-import functools
++from collections import OrderedDict as _default_dict                            ###
++class _ChainMap:                                                                ### https://code.activestate.com/recipes/305268/
++    def __init__(self, *maps):                                                  ###
++        self._maps = maps                                                       ###
++                                                                                ###
++    def __getitem__(self, key):                                                 ###
++        for mapping in self._maps:                                              ###
++            try:                                                                ###
++                return mapping[key]                                             ###
++            except KeyError:                                                    ###
++                pass                                                            ###
++        raise KeyError(key)                                                     ###
++                                                                                ###
+ import io
+ import itertools
+ import re
+ import sys
+-import warnings
+-
+-__all__ = ["NoSectionError", "DuplicateOptionError", "DuplicateSectionError",
+-           "NoOptionError", "InterpolationError", "InterpolationDepthError",
+-           "InterpolationSyntaxError", "ParsingError",
+-           "MissingSectionHeaderError",
+-           "ConfigParser", "SafeConfigParser", "RawConfigParser",
+-           "DEFAULTSECT", "MAX_INTERPOLATION_DEPTH"]
++
+ 
+ DEFAULTSECT = "DEFAULT"
+ 
+@@ -146,7 +149,7 @@
+ 
+     def __init__(self, msg=''):
+         self.message = msg
+-        Exception.__init__(self, msg)
++        super().__init__(msg)                                                   ###
+ 
+     def __repr__(self):
+         return self.message
+@@ -330,7 +333,7 @@
+ # Used in parser getters to indicate the default behaviour when a specific
+ # option is not found it to raise an exception. Created to enable `None' as
+ # a valid fallback value.
+-_UNSET = object()
++class _UNSET: pass                                                              ###
+ 
+ 
+ class Interpolation:
+@@ -364,7 +367,7 @@
+     a configuration file, she can escape it by writing %%. Other % usage
+     is considered a user error and raises `InterpolationSyntaxError'."""
+ 
+-    _KEYCRE = re.compile(r"%\(([^)]+)\)s")
++    _KEYCRE = re.compile("%\(([^)]+)\)s")                                       ###
+ 
+     def before_get(self, parser, section, option, value, defaults):
+         L = []
+@@ -425,7 +428,7 @@
+     """Advanced variant of interpolation, supports the syntax used by
+     `zc.buildout'. Enables interpolation between sections."""
+ 
+-    _KEYCRE = re.compile(r"\$\{([^}]+)\}")
++    _KEYCRE = re.compile("\$\{([^}]+)\}")                                       ###
+ 
+     def before_get(self, parser, section, option, value, defaults):
+         L = []
+@@ -495,70 +498,191 @@
+                     "found: %r" % (rest,))
+ 
+ 
+-class LegacyInterpolation(Interpolation):
+-    """Deprecated interpolation used in old versions of ConfigParser.
+-    Use BasicInterpolation or ExtendedInterpolation instead."""
+-
+-    _KEYCRE = re.compile(r"%\(([^)]*)\)s|.")
+-
+-    def before_get(self, parser, section, option, value, vars):
+-        rawval = value
+-        depth = MAX_INTERPOLATION_DEPTH
+-        while depth:                    # Loop through this until it's done
+-            depth -= 1
+-            if value and "%(" in value:
+-                replace = functools.partial(self._interpolation_replace,
+-                                            parser=parser)
+-                value = self._KEYCRE.sub(replace, value)
+-                try:
+-                    value = value % vars
+-                except KeyError as e:
+-                    raise InterpolationMissingOptionError(
+-                        option, section, rawval, e.args[0])
+-            else:
+-                break
+-        if value and "%(" in value:
+-            raise InterpolationDepthError(option, section, rawval)
+-        return value
+-
+-    def before_set(self, parser, section, option, value):
+-        return value
+-
+-    @staticmethod
+-    def _interpolation_replace(match, parser):
+-        s = match.group(1)
+-        if s is None:
+-            return match.group()
+-        else:
+-            return "%%(%s)s" % parser.optionxform(s)
+-
+-
++
++class Set(set):                                                                 ###
++                                                                                ###
++    def __le__(self, other):                                                    ###
++        if not isinstance(other, set):                                          ###
++            return NotImplemented                                               ###
++        if len(self) > len(other):                                              ###
++            return False                                                        ###
++        for elem in self:                                                       ###
++            if elem not in other:                                               ###
++                return False                                                    ###
++        return True                                                             ###
++                                                                                ###
++    def __lt__(self, other):                                                    ###
++        if not isinstance(other, set):                                          ###
++            return NotImplemented                                               ###
++        return len(self) < len(other) and self.__le__(other)                    ###
++                                                                                ###
++    def __gt__(self, other):                                                    ###
++        if not isinstance(other, set):                                          ###
++            return NotImplemented                                               ###
++        return len(self) > len(other) and self.__ge__(other)                    ###
++                                                                                ###
++    def __ge__(self, other):                                                    ###
++        if not isinstance(other, set):                                          ###
++            return NotImplemented                                               ###
++        if len(self) < len(other):                                              ###
++            return False                                                        ###
++        for elem in other:                                                      ###
++            if elem not in self:                                                ###
++                return False                                                    ###
++        return True                                                             ###
++                                                                                ###
++    def __eq__(self, other):                                                    ###
++        if not isinstance(other, set):                                          ###
++            return NotImplemented                                               ###
++        return len(self) == len(other) and self.__le__(other)                   ###
++                                                                                ###
++                                                                                ###
++class MappingView:                                                              ###
++                                                                                ###
++    def __init__(self, mapping):                                                ###
++        self._mapping = mapping                                                 ###
++                                                                                ###
++    def __len__(self):                                                          ###
++        return len(self._mapping)                                               ###
++                                                                                ###
++    def __repr__(self):                                                         ###
++        return '{}({!r})'.format(self.__class__.__name__, self._mapping)        ###
++                                                                                ###
++                                                                                ###
++class KeysView(MappingView, Set):                                               ###
++                                                                                ###
++    def __contains__(self, key):                                                ###
++        return key in self._mapping                                             ###
++                                                                                ###
++    def __iter__(self):                                                         ###
++        yield from self._mapping                                                ###
++                                                                                ###
++                                                                                ###
++class ItemsView(MappingView, Set):                                              ###
++                                                                                ###
++    def __contains__(self, item):                                               ###
++        key, value = item                                                       ###
++        try:                                                                    ###
++            v = self._mapping[key]                                              ###
++        except KeyError:                                                        ###
++            return False                                                        ###
++        else:                                                                   ###
++            return v == value                                                   ###
++                                                                                ###
++    def __iter__(self):                                                         ###
++        for key in self._mapping:                                               ###
++            yield (key, self._mapping[key])                                     ###
++                                                                                ###
++                                                                                ###
++class ValuesView(MappingView):                                                  ###
++                                                                                ###
++    def __contains__(self, value):                                              ###
++        for key in self._mapping:                                               ###
++            if value == self._mapping[key]:                                     ###
++                return True                                                     ###
++        return False                                                            ###
++                                                                                ###
++    def __iter__(self):                                                         ###
++        for key in self._mapping:                                               ###
++            yield self._mapping[key]                                            ###
++                                                                                ###
++                                                                                ###
++                                                                                ###
++class MutableMapping:                                                           ###
++    def get(self, key, default=None):                                           ###
++        try:                                                                    ###
++            return self[key]                                                    ###
++        except KeyError:                                                        ###
++            return default                                                      ###
++                                                                                ###
++    def __contains__(self, key):                                                ###
++        try:                                                                    ###
++            self[key]                                                           ###
++        except KeyError:                                                        ###
++            return False                                                        ###
++        else:                                                                   ###
++            return True                                                         ###
++                                                                                ###
++    def keys(self):                                                             ###
++        return KeysView(self)                                                   ###
++                                                                                ###
++    def items(self):                                                            ###
++        return ItemsView(self)                                                  ###
++                                                                                ###
++    def values(self):                                                           ###
++        return ValuesView(self)                                                 ###
++                                                                                ###
++    def __eq__(self, other):                                                    ###
++        if not isinstance(other, MutableMapping):                               ###
++            return NotImplemented                                               ###
++        return dict(self.items()) == dict(other.items())                        ###
++                                                                                ###
++    __marker = None  # object()                                                 ###
++                                                                                ###
++    def pop(self, key, default=__marker):                                       ###
++        try:                                                                    ###
++            value = self[key]                                                   ###
++        except KeyError:                                                        ###
++            if default is self.__marker:                                        ###
++                raise                                                           ###
++            return default                                                      ###
++        else:                                                                   ###
++            del self[key]                                                       ###
++            return value                                                        ###
++                                                                                ###
++    def popitem(self):                                                          ###
++        try:                                                                    ###
++            key = next(iter(self))                                              ###
++        except StopIteration:                                                   ###
++            raise KeyError                                                      ###
++        value = self[key]                                                       ###
++        del self[key]                                                           ###
++        return key, value                                                       ###
++                                                                                ###
++    def clear(self):                                                            ###
++        try:                                                                    ###
++            while True:                                                         ###
++                self.popitem()                                                  ###
++        except KeyError:                                                        ###
++            pass                                                                ###
++                                                                                ###
++    def update(*args, **kwds):                                                  ###
++        if not args:                                                            ###
++            raise TypeError("descriptor 'update' of 'MutableMapping' object "   ###
++                            "needs an argument")                                ###
++        self, *args = args                                                      ###
++        if len(args) > 1:                                                       ###
++            raise TypeError('update expected at most 1 arguments, got %d' %     ###
++                            len(args))                                          ###
++        if args:                                                                ###
++            other = args[0]                                                     ###
++            if isinstance(other, Mapping):                                      ###
++                for key in other:                                               ###
++                    self[key] = other[key]                                      ###
++            elif hasattr(other, "keys"):                                        ###
++                for key in other.keys():                                        ###
++                    self[key] = other[key]                                      ###
++            else:                                                               ###
++                for key, value in other:                                        ###
++                    self[key] = value                                           ###
++        for key, value in kwds.items():                                         ###
++            self[key] = value                                                   ###
++                                                                                ###
++    def setdefault(self, key, default=None):                                    ###
++        try:                                                                    ###
++            return self[key]                                                    ###
++        except KeyError:                                                        ###
++            self[key] = default                                                 ###
++        return default                                                          ###
++                                                                                ###
++                                                                                ###
+ class RawConfigParser(MutableMapping):
+     """ConfigParser that does not do interpolation."""
+ 
+     # Regular expressions for parsing section headers and options
+-    _SECT_TMPL = r"""
+-        \[                                 # [
+-        (?P<header>[^]]+)                  # very permissive!
+-        \]                                 # ]
+-        """
+-    _OPT_TMPL = r"""
+-        (?P<option>.*?)                    # very permissive!
+-        \s*(?P<vi>{delim})\s*              # any number of space/tab,
+-                                           # followed by any of the
+-                                           # allowed delimiters,
+-                                           # followed by any space/tab
+-        (?P<value>.*)$                     # everything up to eol
+-        """
+-    _OPT_NV_TMPL = r"""
+-        (?P<option>.*?)                    # very permissive!
+-        \s*(?:                             # any number of space/tab,
+-        (?P<vi>{delim})\s*                 # optionally followed by
+-                                           # any of the allowed
+-                                           # delimiters, followed by any
+-                                           # space/tab
+-        (?P<value>.*))?$                   # everything up to eol
+-        """
++    _SECT_TMPL = "\[([^\]]+)\]"                                                 ###
++    _OPT_TMPL = "(.*?)\s*({delim})\s*(.*)$"                                     ###
++    _OPT_NV_TMPL = "(.*?)\s*(?:({delim})\s*(.*))?$"                             ###
+     # Interpolation algorithm to be used if the user does not specify another
+     _DEFAULT_INTERPOLATION = Interpolation()
+     # Compiled regular expression for matching sections
+@@ -569,7 +693,7 @@
+     # delimited using typical separators
+     OPTCRE_NV = re.compile(_OPT_NV_TMPL.format(delim="=|:"), re.VERBOSE)
+     # Compiled regular expression for matching leading whitespace in a line
+-    NONSPACECRE = re.compile(r"\S")
++    NONSPACECRE = re.compile("\S")                                              ###
+     # Possible boolean values in the configuration.
+     BOOLEAN_STATES = {'1': True, 'yes': True, 'true': True, 'on': True,
+                       '0': False, 'no': False, 'false': False, 'off': False}
+@@ -727,11 +851,6 @@
+ 
+     def readfp(self, fp, filename=None):
+         """Deprecated, use read_file instead."""
+-        warnings.warn(
+-            "This method will be removed in future versions.  "
+-            "Use 'parser.read_file()' instead.",
+-            DeprecationWarning, stacklevel=2
+-        )
+         self.read_file(fp, source=filename)
+ 
+     def get(self, section, option, *, raw=False, vars=None, fallback=_UNSET):
+@@ -1036,7 +1155,7 @@
+                 # is it a section header?
+                 mo = self.SECTCRE.match(value)
+                 if mo:
+-                    sectname = mo.group('header')
++                    sectname = mo.group(1)                                      ###
+                     if sectname in self._sections:
+                         if self._strict and sectname in elements_added:
+                             raise DuplicateSectionError(sectname, fpname,
+@@ -1059,7 +1178,9 @@
+                 else:
+                     mo = self._optcre.match(value)
+                     if mo:
+-                        optname, vi, optval = mo.group('option', 'vi', 'value')
++                        optname = mo.group(1)                                   ###
++                        vi = mo.group(2)                                        ###
++                        optval = mo.group(3)                                    ###
+                         if not optname:
+                             e = self._handle_error(e, fpname, lineno, line)
+                         optname = self.optionxform(optname.rstrip())
+@@ -1218,7 +1339,7 @@
+         return len(self._options())
+ 
+     def __iter__(self):
+-        return self._options().__iter__()
++        return iter(self._options())                                            ###
+ 
+     def _options(self):
+         if self._name != self._parser.default_section:
+@@ -1251,3 +1372,4 @@
+     def name(self):
+         # The name of the section on a proxy is read-only.
+         return self._name
++

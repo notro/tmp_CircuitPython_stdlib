@@ -1,0 +1,60 @@
+--- <CPython-3.4.9>/test/test_call.py
++++ lib/test/test_call.py
+@@ -8,24 +8,30 @@
+ 
+ class CFunctionCalls(unittest.TestCase):
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs0(self):
+         self.assertRaises(TypeError, {}.__contains__)
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs1(self):
+         {}.__contains__(0)
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs2(self):
+         self.assertRaises(TypeError, {}.__contains__, 0, 1)
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs0_ext(self):
+         try:
+             {}.__contains__(*())
+         except TypeError:
+             pass
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs1_ext(self):
+         {}.__contains__(*(0,))
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs2_ext(self):
+         try:
+             {}.__contains__(*(1, 2))
+@@ -34,12 +40,15 @@
+         else:
+             raise RuntimeError
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs0_kw(self):
+         self.assertRaises(TypeError, {}.__contains__, x=2)
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs1_kw(self):
+         self.assertRaises(TypeError, {}.__contains__, x=2)
+ 
++    @unittest.skip('dict.__contains__ is missing')                              ###
+     def test_varargs2_kw(self):
+         self.assertRaises(TypeError, {}.__contains__, x=2, y=2)
+ 
+@@ -123,9 +132,4 @@
+         self.assertRaises(TypeError, [].count, x=2, y=2)
+ 
+ 
+-def test_main():
+-    support.run_unittest(CFunctionCalls)
+-
+-
+-if __name__ == "__main__":
+-    test_main()
++

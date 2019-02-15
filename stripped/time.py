@@ -156,7 +156,13 @@ def strftime(_format, t=None):
             elif c == 'H':
                 s += '{:{pad}d}'.format(t.tm_hour, pad=pad)
             elif c == 'I':
-                s += 'TODO'
+                if t.tm_hour > 12:
+                    h = t.tm_hour - 12
+                elif t.tm_hour > 0:
+                    h = t.tm_hour
+                else:
+                    h = 12
+                s += '{:{pad}d}'.format(h, pad=pad)
             elif c == 'j':
                 pad = '0' if flag_pad is None else flag_pad
                 pad += '3' if flag_pad_width is None else flag_pad_width
@@ -166,18 +172,18 @@ def strftime(_format, t=None):
             elif c == 'M':
                 s += '{:{pad}d}'.format(t.tm_min, pad=pad)
             elif c == 'p':
-                s += 'TODO'
+                s += 'AM' if t.tm_hour < 12 else 'PM'
             elif c == 'S':
                 s += '{:{pad}d}'.format(t.tm_sec, pad=pad)
             elif c == 'U':
                 s += 'TODO'
             elif c == 'w':
-                s += '{:d}'.format(t.tm_wday + 1)
+                s += '{:d}'.format((t.tm_wday + 1) % 7)
             elif c == 'W':
                 s += 'TODO'
-            elif c == 'x':
+            elif c == 'x':  # Locale’s appropriate date representation.
                 s += strftime('%m/%d/%y', t)
-            elif c == 'X':
+            elif c == 'X':  # Locale’s appropriate time representation.
                 s += strftime('%H:%M:%S', t)
             elif c == 'y':
                 s += '{:{pad}d}'.format(t.tm_year % 100, pad=pad)
@@ -186,7 +192,27 @@ def strftime(_format, t=None):
                 pad += '' if flag_pad_width is None else flag_pad_width
                 s += '{:{pad}d}'.format(t.tm_year, pad=pad)
             elif c == 'z':
-                s += 'TODO'
+                s += '+0000'
+#            elif c == 'Z':
+#                s += ''
+            elif c == 'D':
+                s += '{:02d}/{:02d}/{:02d}'.format(t.tm_mon, t.tm_mday, t.tm_year % 100)
+            elif c == 'e':
+                s += '{:2d}'.format(t.tm_mday)
+            elif c == 'k':
+                s += '{:2d}'.format(t.tm_hour)
+            elif c == 'n':
+                s += '\n'
+            elif c == 'r':
+                s += strftime('%I:%M:%S %p', t)
+            elif c == 'R':
+                s += strftime('%H:%M', t)
+#            elif c == 's':
+#                s += ''
+            elif c == 't':
+                s += '\t'
+            elif c == 'T':
+                s += strftime('%H:%M:%S', t)
             else:
                 # Doesn't recognise this one
                 s += '%' + c

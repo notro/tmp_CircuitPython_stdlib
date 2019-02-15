@@ -1,6 +1,6 @@
 --- <CPython-3.4.9>/re.py
 +++ lib/re.py
-@@ -119,75 +119,22 @@
+@@ -119,50 +119,17 @@
  
  """
  
@@ -38,6 +38,7 @@
 -
 +import ure                                                                      ###
 +from ure import DEBUG                                                           ###
++VERBOSE = 0                                                                     ### Dummy to avoid fixing up libraries
  # --------------------------------------------------------------------
  # public interface
  
@@ -55,18 +56,10 @@
  
  def search(pattern, string, flags=0):
      """Scan through string looking for a match to the pattern, returning
-     a match object, or None if no match was found."""
-     return _compile(pattern, flags).search(string)
+@@ -178,16 +145,6 @@
+     a replacement string to be used."""
+     return _compile(pattern, flags).sub(repl, string, count)
  
--def sub(pattern, repl, string, count=0, flags=0):
--    """Return the string obtained by replacing the leftmost
--    non-overlapping occurrences of the pattern in string by the
--    replacement repl.  repl can be either a string or a callable;
--    if a string, backslash escapes in it are processed.  If it is
--    a callable, it's passed the match object and must return
--    a replacement string to be used."""
--    return _compile(pattern, flags).sub(repl, string, count)
--
 -def subn(pattern, repl, string, count=0, flags=0):
 -    """Return a 2-tuple containing (new_string, number).
 -    new_string is the string obtained by replacing the leftmost
@@ -80,7 +73,7 @@
  
  def split(pattern, string, maxsplit=0, flags=0):
      """Split the source string by the occurrences of the pattern,
-@@ -197,39 +144,13 @@
+@@ -197,39 +154,13 @@
      list.  If maxsplit is nonzero, at most maxsplit splits occur,
      and the remainder of the string is returned as the final element
      of the list."""
@@ -122,7 +115,7 @@
  
  _alphanum_str = frozenset(
      "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890")
-@@ -268,113 +189,15 @@
+@@ -268,113 +199,15 @@
  # --------------------------------------------------------------------
  # internals
  

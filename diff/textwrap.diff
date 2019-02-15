@@ -1,0 +1,246 @@
+--- <CPython-3.4.9>/textwrap.py
++++ lib/textwrap.py
+@@ -7,7 +7,6 @@
+ 
+ import re
+ 
+-__all__ = ['TextWrapper', 'wrap', 'fill', 'dedent', 'indent', 'shorten']
+ 
+ # Hardcode the recognized whitespace characters to the US-ASCII
+ # whitespace characters.  The main reason for doing this is that in
+@@ -19,6 +18,24 @@
+ # since 0xa0 is not in range(128).
+ _whitespace = '\t\n\x0b\x0c\r '
+ 
++def expandtabs(string, n):                                                      ### str.expandtabs() is missing
++    if string.find('\t') < 0:                                                   ###
++        return string                                                           ###
++    result = ""                                                                 ### https://stackoverflow.com/a/34546244
++    pos = 0                                                                     ###
++    for char in string:                                                         ###
++        if char == "\t":                                                        ###
++            # instead of the tab character, append the                          ###
++            # number of spaces to the next tab stop                             ###
++            char = " " * (n - pos % n)                                          ###
++            pos = 0                                                             ###
++        elif char == "\n":                                                      ###
++            pos = 0                                                             ###
++        else:                                                                   ###
++            pos += 1                                                            ###
++        result += char                                                          ###
++    return result                                                               ###
++                                                                                ###
+ class TextWrapper:
+     """
+     Object for wrapping/filling text.  The public interface consists of
+@@ -73,29 +90,12 @@
+     for x in _whitespace:
+         unicode_whitespace_trans[ord(x)] = uspace
+ 
+-    # This funky little regex is just the trick for splitting
+-    # text up into word-wrappable chunks.  E.g.
+-    #   "Hello there -- you goof-ball, use the -b option!"
+-    # splits into
+-    #   Hello/ /there/ /--/ /you/ /goof-/ball,/ /use/ /the/ /-b/ /option!
+-    # (after stripping out empty strings).
+-    wordsep_re = re.compile(
+-        r'(\s+|'                                  # any whitespace
+-        r'[^\s\w]*\w+[^0-9\W]-(?=\w+[^0-9\W])|'   # hyphenated words
+-        r'(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')   # em-dash
+-
+-    # This less funky little regex just split on recognized spaces. E.g.
+-    #   "Hello there -- you goof-ball, use the -b option!"
+-    # splits into
+-    #   Hello/ /there/ /--/ /you/ /goof-ball,/ /use/ /the/ /-b/ /option!/
+-    wordsep_simple_re = re.compile(r'(\s+)')
+-
+-    # XXX this is not locale- or charset-aware -- string.lowercase
+-    # is US-ASCII only (and therefore English-only)
+-    sentence_end_re = re.compile(r'[a-z]'             # lowercase letter
+-                                 r'[\.\!\?]'          # sentence-ending punct.
+-                                 r'[\"\']?'           # optional end-of-quote
+-                                 r'\Z')               # end of chunk
++    ws_re = re.compile('\s+')                                                   ###
++    not_ws_re = re.compile('\S+')                                               ###
++    hyp_re = re.compile('(\W*\w+[^0-9\W-]-)\w+[^0-9\W]')                        ###
++    hyp2_re = re.compile('([^0-9\W-]-)\w+[^0-9\W]')                             ###
++    dash_re = re.compile('(.*?[A-Za-z0-9_\!\"\'\&\.\,\?])(--+)\w')              ###
++    sentence_end_re = re.compile('[a-z][\.\!\?][\"\']?')                        ### \Z is not supported
+ 
+ 
+     def __init__(self,
+@@ -137,9 +137,10 @@
+         becomes " foo    bar  baz".
+         """
+         if self.expand_tabs:
+-            text = text.expandtabs(self.tabsize)
++            text = expandtabs(text, self.tabsize)                               ###
+         if self.replace_whitespace:
+-            text = text.translate(self.unicode_whitespace_trans)
++            for x in _whitespace:                                               ### str.translate() is missing
++                text = text.replace(x, ' ')                                     ###
+         return text
+ 
+ 
+@@ -158,10 +159,84 @@
+           'use', ' ', 'the', ' ', '-b', ' ', option!'
+         otherwise.
+         """
+-        if self.break_on_hyphens is True:
+-            chunks = self.wordsep_re.split(text)
+-        else:
+-            chunks = self.wordsep_simple_re.split(text)
++        chunks = []                                                             ### split on capture groups is not supported
++                                                                                ###
++        if self.break_on_hyphens is True:                                       ###
++            ws_re_match = self.ws_re.match                                      ###
++            not_ws_re_match = self.not_ws_re.match                              ###
++            hyp_re_match = self.hyp_re.match                                    ###
++            hyp2_re_match = self.hyp2_re.match                                  ###
++            dash_re_match = self.dash_re.match                                  ###
++                                                                                ###
++            len_text = len(text)                                                ###
++                                                                                ###
++            pos = 0                                                             ###
++            ws_pos = []                                                         ###
++                                                                                ###
++            while pos < len_text:                                               ###
++                old_pos = pos                                                   ###
++                m = ws_re_match(text, pos)                                      ###
++                if m:                                                           ###
++                    pos = m.end(0)                                              ###
++                    ws_pos.append(m.start(0))                                   ###
++                else:                                                           ###
++                    m = not_ws_re_match(text, pos)                              ###
++                    if m:                                                       ###
++                        pos = m.end(0)                                          ###
++                if old_pos == pos:                                              ###
++                    raise RuntimeError('parser error')                          ###
++                                                                                ###
++            pos = 0                                                             ###
++                                                                                ###
++            while pos < len_text:                                               ###
++                m = ws_re_match(text, pos)                                      ###
++                if m:                                                           ###
++                    chunks.append(m.group(0))                                   ###
++                    pos = m.end(0)                                              ###
++                    continue                                                    ###
++                                                                                ###
++                if len(ws_pos) and pos > ws_pos[0]:                             ###
++                    ws_pos.pop(0)                                               ###
++                                                                                ###
++                end = ws_pos[0] if len(ws_pos) else len_text                    ###
++                                                                                ###
++                m = hyp_re_match(text, pos, end)                                ###
++                if not m:                                                       ###
++                    m = hyp2_re_match(text, pos, end)                           ###
++                if m:                                                           ###
++                    chunks.append(m.group(1))                                   ###
++                    pos = m.end(1)                                              ###
++                    continue                                                    ###
++                                                                                ###
++                m = self.dash_re.match(text, pos, end)                          ###
++                if m:                                                           ###
++                    chunks.append(m.group(1))                                   ###
++                    chunks.append(m.group(2))                                   ###
++                    pos = m.end(2)                                              ###
++                    continue                                                    ###
++                                                                                ###
++                chunks.append(text[pos:end])                                    ###
++                pos = end                                                       ###
++                                                                                ###
++        else:                                                                   ###
++            chunk = ''                                                          ###
++            word = None                                                         ###
++            for c in text:                                                      ###
++                is_break = False                                                ###
++                if c in ' \t\r\n\f':                                            ###
++                    if word is True:                                            ###
++                        is_break = True                                         ###
++                    word = False                                                ###
++                else:                                                           ###
++                    if word is False:                                           ###
++                        is_break = True                                         ###
++                    word = True                                                 ###
++                if is_break:                                                    ###
++                    chunks.append(chunk)                                        ###
++                    chunk = ''                                                  ###
++                chunk += c                                                      ###
++            else:                                                               ###
++                chunks.append(chunk)                                            ###
+         chunks = [c for c in chunks if c]
+         return chunks
+ 
+@@ -177,11 +252,13 @@
+         i = 0
+         patsearch = self.sentence_end_re.search
+         while i < len(chunks)-1:
+-            if chunks[i+1] == " " and patsearch(chunks[i]):
+-                chunks[i+1] = "  "
+-                i += 2
+-            else:
+-                i += 1
++            if chunks[i+1] == " ":                                              ###
++                m = patsearch(chunks[i])                                        ###
++                if m and m.end() == len(chunks[i]):                             ### \Z is not supported
++                    chunks[i+1] = "  "                                          ###
++                    i += 2                                                      ###
++                    continue                                                    ###
++            i += 1                                                              ###
+ 
+     def _handle_long_word(self, reversed_chunks, cur_line, cur_len, width):
+         """_handle_long_word(chunks : [string],
+@@ -394,8 +471,8 @@
+ 
+ # -- Loosely related functionality -------------------------------------
+ 
+-_whitespace_only_re = re.compile('^[ \t]+$', re.MULTILINE)
+-_leading_whitespace_re = re.compile('(^[ \t]*)(?:[^ \t\n])', re.MULTILINE)
++_whitespace_only_re = re.compile('^[ \t]+$')                                    ### No MULTILINE
++_leading_whitespace_re = re.compile('(^[ \t]*)')                                ###
+ 
+ def dedent(text):
+     """Remove any common leading whitespace from every line in `text`.
+@@ -413,8 +490,19 @@
+     # Look for the longest leading string of spaces and tabs common to
+     # all lines.
+     margin = None
+-    text = _whitespace_only_re.sub('', text)
+-    indents = _leading_whitespace_re.findall(text)
++    indents = []                                                                ###
++    lines = []                                                                  ###
++    for line in text.splitlines():                                              ###
++        if _whitespace_only_re.match(line):                                     ###
++            line = ''                                                           ###
++        elif line:                                                              ###
++            m = _leading_whitespace_re.match(line)                              ###
++            if m:                                                               ###
++                indents.append(m.group(1))                                      ###
++        lines.append(line)                                                      ###
++    if text[-1] == '\n':                                                        ###
++        lines.append('')                                                        ###
++    text = '\n'.join(lines)                                                     ###
+     for indent in indents:
+         if margin is None:
+             margin = indent
+@@ -446,7 +534,14 @@
+                    "line = %r, margin = %r" % (line, margin)
+ 
+     if margin:
+-        text = re.sub(r'(?m)^' + margin, '', text)
++        lines = []                                                              ###
++        margin_len = len(margin)                                                ###
++        for line in text.splitlines():                                          ###
++            lines.append(line[margin_len:])                                     ###
++                                                                                ###
++        if text[-1] == '\n':                                                    ###
++            lines.append('')                                                    ###
++        text = '\n'.join(lines)                                                 ###
+     return text
+ 
+ 
+@@ -472,3 +567,4 @@
+     #print dedent("\tfoo\n\tbar")
+     #print dedent("  \thello there\n  \t  how are you?")
+     print(dedent("Hello there.\n  This is indented."))
++

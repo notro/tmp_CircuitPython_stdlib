@@ -47,7 +47,7 @@ def safe_repr(obj, short=False):
     try:
         result = repr(obj)
     except Exception:
-        result = object.__repr__(obj)
+        result = 'unittest.util.safe_repr: FIXME'                               ### AttributeError: type object 'object' has no attribute '__repr__'
     if not short or len(result) < _MAX_LENGTH:
         return result
     return result[:_MAX_LENGTH] + ' [truncated]...'
